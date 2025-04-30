@@ -1,0 +1,3 @@
+import translate
+
+translate.main()

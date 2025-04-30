@@ -5,9 +5,13 @@ import sys
 import traceback
 
 from fractions import Fraction
+from pddl.actions import PropositionalAction
+from pddl.conditions import Atom
+from pddl.tasks import Metric, Task
+from typing import Any, DefaultDict, Dict, List, Tuple, Union
 
 
-def python_version_supported():
+def python_version_supported() -> bool:
     return sys.version_info >= (3, 6)
 
 
@@ -57,7 +61,7 @@ simplified_effect_condition_counter = 0
 added_implied_precondition_counter = 0
 
 
-def strips_to_sas_dictionary(groups, assert_partial):
+def strips_to_sas_dictionary(groups: List[List[Atom]], assert_partial: bool) -> Tuple[List[int], Dict[Atom, List[Tuple[int, int]]]]:
     dictionary = {}
     for var_no, group in enumerate(groups):
         for val_no, atom in enumerate(group):
@@ -67,7 +71,7 @@ def strips_to_sas_dictionary(groups, assert_partial):
     return [len(group) + 1 for group in groups], dictionary
 
 
-def translate_strips_conditions_aux(conditions, dictionary, ranges):
+def translate_strips_conditions_aux(conditions: Union[List[Atom], Tuple[Atom, Atom, Atom, Atom]], dictionary: Dict[Atom, List[Tuple[int, int]]], ranges: List[int]) -> List[Dict[int, int]]:
     condition = {}
     for fact in conditions:
         if fact.negated:
@@ -162,8 +166,8 @@ def translate_strips_conditions_aux(conditions, dictionary, ranges):
     return multiply_out(condition)
 
 
-def translate_strips_conditions(conditions, dictionary, ranges, mutex_dict,
-                                mutex_ranges):
+def translate_strips_conditions(conditions: Union[List[Atom], Tuple[Atom, Atom, Atom, Atom]], dictionary: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                                mutex_ranges: List[int]) -> List[Dict[int, int]]:
     if not conditions:
         return [{}]  # Quick exit for common case.
 
@@ -175,8 +179,8 @@ def translate_strips_conditions(conditions, dictionary, ranges, mutex_dict,
     return translate_strips_conditions_aux(conditions, dictionary, ranges)
 
 
-def translate_strips_operator(operator, dictionary, ranges, mutex_dict,
-                              mutex_ranges, implied_facts):
+def translate_strips_operator(operator: PropositionalAction, dictionary: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                              mutex_ranges: List[int], implied_facts: Dict[Any, Any]) -> List[sas_tasks.SASOperator]:
     conditions = translate_strips_conditions(operator.precondition, dictionary,
                                              ranges, mutex_dict, mutex_ranges)
 
@@ -198,8 +202,8 @@ def translate_strips_operator(operator, dictionary, ranges, mutex_dict,
     return sas_operators
 
 
-def negate_and_translate_condition(condition, dictionary, ranges, mutex_dict,
-                                   mutex_ranges):
+def negate_and_translate_condition(condition: List[Any], dictionary: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                                   mutex_ranges: List[int]) -> List[Dict[Any, Any]]:
     # condition is a list of lists of literals (DNF)
     # the result is the negation of the condition in DNF in
     # finite-domain representation (a list of dictionaries that map
@@ -216,8 +220,8 @@ def negate_and_translate_condition(condition, dictionary, ranges, mutex_dict,
     return negation if negation else None
 
 
-def translate_strips_operator_aux(operator, dictionary, ranges, mutex_dict,
-                                  mutex_ranges, implied_facts, condition):
+def translate_strips_operator_aux(operator: PropositionalAction, dictionary: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                                  mutex_ranges: List[int], implied_facts: Dict[Any, Any], condition: Dict[int, int]) -> sas_tasks.SASOperator:
     outcomes = []
 
     for strips_outcome in operator.strips_outcomes:
@@ -295,8 +299,8 @@ def translate_strips_operator_aux(operator, dictionary, ranges, mutex_dict,
                                  outcomes, operator.weight)
 
 
-def build_sas_outcome(probability, condition, effects_by_variable,
-                      ranges, implied_facts):
+def build_sas_outcome(probability: Fraction, condition: Dict[int, int], effects_by_variable: Union[DefaultDict[int, DefaultDict[int, List[Dict[int, int]]]], DefaultDict[int, DefaultDict[int, List[Dict[Any, Any]]]], DefaultDict[int, Union[DefaultDict[int, List[Dict[Any, Any]]], DefaultDict[int, List[Dict[int, int]]]]]],
+                      ranges: List[int], implied_facts: Dict[Any, Any]) -> sas_tasks.SASOutcome:
     if options.add_implied_preconditions:
         implied_precondition = set()
         for fact in condition.items():
@@ -344,7 +348,7 @@ def build_sas_outcome(probability, condition, effects_by_variable,
     return sas_tasks.SASOutcome(probability, eff)
 
 
-def prune_stupid_effect_conditions(var, val, conditions, effects_on_var):
+def prune_stupid_effect_conditions(var: int, val: int, conditions: List[List[Union[Any, Tuple[int, int]]]], effects_on_var: Union[DefaultDict[int, List[Dict[Any, Any]]], DefaultDict[int, List[Dict[int, int]]]]) -> bool:
     ## (IF <conditions> THEN <var> := <val>) is a conditional effect.
     ## <var> is guaranteed to be a binary variable.
     ## <conditions> is in DNF representation (list of lists).
@@ -399,8 +403,8 @@ def translate_strips_axiom(axiom, dictionary, ranges, mutex_dict,
     return axioms
 
 
-def translate_strips_operators(actions, strips_to_sas, ranges, mutex_dict,
-                               mutex_ranges, implied_facts):
+def translate_strips_operators(actions: List[PropositionalAction], strips_to_sas: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                               mutex_ranges: List[int], implied_facts: Dict[Any, Any]) -> List[sas_tasks.SASOperator]:
     result = []
     for action in actions:
         sas_ops = translate_strips_operator(action, strips_to_sas, ranges,
@@ -410,8 +414,8 @@ def translate_strips_operators(actions, strips_to_sas, ranges, mutex_dict,
     return result
 
 
-def translate_strips_axioms(axioms, strips_to_sas, ranges, mutex_dict,
-                            mutex_ranges):
+def translate_strips_axioms(axioms: List[Any], strips_to_sas: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                            mutex_ranges: List[int]) -> List[Any]:
     result = []
     for axiom in axioms:
         sas_axioms = translate_strips_axiom(axiom, strips_to_sas, ranges,
@@ -446,9 +450,9 @@ def dump_task(init, goals, actions, axioms, axiom_layer_dict):
     sys.stdout = old_stdout
 
 
-def translate_task(strips_to_sas, ranges, translation_key, mutex_dict,
-                   mutex_ranges, mutex_key, init, goals, goal_reward, actions,
-                   axioms, metric, rewards, implied_facts):
+def translate_task(strips_to_sas: Dict[Atom, List[Tuple[int, int]]], ranges: List[int], translation_key: List[List[str]], mutex_dict: Dict[Atom, List[Tuple[int, int]]],
+                   mutex_ranges: List[int], mutex_key: List[List[Tuple[int, int]]], init: List[Atom], goals: Tuple[Atom, Atom, Atom, Atom], goal_reward: None, actions: List[PropositionalAction],
+                   axioms: List[Any], metric: Metric, rewards: bool, implied_facts: Dict[Any, Any]) -> sas_tasks.SASTask:
     with timers.timing("Processing axioms", block=True):
         axioms, axiom_init, axiom_layer_dict = axiom_rules.handle_axioms(
             actions, axioms, goals)
@@ -537,7 +541,7 @@ def unsolvable_sas_task(msg):
     return trivial_task(solvable=False)
 
 
-def pddl_to_sas(task):
+def pddl_to_sas(task: Task) -> sas_tasks.SASTask:
     with timers.timing("Instantiating", block=True):
         (relaxed_reachable, atoms, actions, axioms,
          reachable_action_params) = instantiate.explore(task)
@@ -646,7 +650,7 @@ def pddl_to_sas(task):
     return sas_task
 
 
-def build_mutex_key(strips_to_sas, groups):
+def build_mutex_key(strips_to_sas: Dict[Atom, List[Tuple[int, int]]], groups: List[List[Atom]]) -> List[List[Tuple[int, int]]]:
     assert options.use_partial_encoding
     group_keys = []
     for group in groups:
@@ -708,7 +712,7 @@ def build_implied_facts(strips_to_sas, groups, mutex_groups):
     return implied_facts
 
 
-def dump_statistics(sas_task):
+def dump_statistics(sas_task: sas_tasks.SASTask):
     print("Translator variables: %d" % len(sas_task.variables.ranges))
     print(
         "Translator derived variables: %d" %

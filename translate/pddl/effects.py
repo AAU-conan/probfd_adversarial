@@ -1,12 +1,15 @@
 from fractions import Fraction
 from functools import reduce
-from typing import List, Union, Tuple, Any
+from typing import DefaultDict, Dict, Set, List, Union, Tuple, Any
 
 from pddl_parser.parse_error import ParseError
 from . import conditions
 from .conditions import Condition, Literal
 from .f_expression import Increase, NumericConstant, ArithmeticExpression
 from .pddl_types import TypedObject
+from pddl.conditions import Atom, Condition, Literal, NegatedAtom
+from pddl.f_expression import Increase
+from pddl.pddl_types import TypedObject
 
 AnyEffect = Union[
     "ConditionalEffect",
@@ -39,7 +42,7 @@ class Effect:
         self.condition = condition
         self.literal = literal
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Effect") -> bool:
         return (self.__class__ is other.__class__ and
                 self.parameters == other.parameters and
                 self.condition == other.condition and
@@ -60,15 +63,15 @@ class Effect:
     def copy(self):
         return Effect(self.parameters, self.condition, self.literal)
 
-    def uniquify_variables(self, type_map):
+    def uniquify_variables(self, type_map: Dict[str, str]):
         renamings = {}
         self.parameters = [par.uniquify_name(type_map, renamings)
                            for par in self.parameters]
         self.condition = self.condition.uniquify_variables(type_map, renamings)
         self.literal = self.literal.rename_variables(renamings)
 
-    def instantiate(self, var_mapping, init_facts, fluent_facts,
-                    objects_by_type, result):
+    def instantiate(self, var_mapping: Dict[str, str], init_facts: Set[Atom], fluent_facts: Set[Atom],
+                    objects_by_type: DefaultDict[str, List[str]], result: List[Union[Any, Tuple[List[Any], Atom], Tuple[List[Any], NegatedAtom]]]):
         if self.parameters:
             var_mapping = var_mapping.copy()  # Will modify this.
             object_lists = [objects_by_type.get(par.type_name, [])
@@ -80,7 +83,7 @@ class Effect:
         else:
             self._instantiate(var_mapping, init_facts, fluent_facts, result)
 
-    def _instantiate(self, var_mapping, init_facts, fluent_facts, result):
+    def _instantiate(self, var_mapping: Dict[str, str], init_facts: Set[Atom], fluent_facts: Set[Atom], result: List[Union[Any, Tuple[List[Any], Atom], Tuple[List[Any], NegatedAtom]]]):
         condition = []
         try:
             self.condition.instantiate(var_mapping, init_facts, fluent_facts,
@@ -235,7 +238,7 @@ class UniversalEffect(object):
 
 
 class ConjunctiveEffect(object):
-    def __init__(self, effects):
+    def __init__(self, effects: List[AnyEffect]):
         flattened_effects = []
         for effect in effects:
             if isinstance(effect, ConjunctiveEffect):
@@ -244,12 +247,12 @@ class ConjunctiveEffect(object):
                 flattened_effects.append(effect)
         self.effects = flattened_effects
 
-    def dump(self, indent="  "):
+    def dump(self, indent: str="  "):
         print("%sand" % (indent))
         for eff in self.effects:
             eff.dump(indent + "  ")
 
-    def normalize(self):
+    def normalize(self) -> Union["ConjunctiveEffect", "ProbabilisticEffect"]:
         new_effects = []
         for effect in self.effects:
             new_effects.append(effect.normalize())
@@ -306,7 +309,7 @@ class ConjunctiveEffect(object):
 
         return ProbabilisticEffect(new_pairs)
 
-    def normalize_oneof(self):
+    def normalize_oneof(self) -> Union["ConjunctiveEffect", "OneOfEffect"]:
         normal_effects = [effect.normalize() for effect in self.effects if not isinstance(effect, OneOfEffect)]
         oneof_effects = [effect.normalize() for effect in self.effects if isinstance(effect, OneOfEffect)]
 
@@ -323,7 +326,7 @@ class ConjunctiveEffect(object):
 
         return OneOfEffect(new_effects)
 
-    def extract_cost(self):
+    def extract_cost(self) -> Tuple[Union[None, "CostEffect"],  "ConjunctiveEffect"]:
         new_effects = []
         cost_effects = []
         for effect in self.effects:
@@ -356,7 +359,7 @@ class ConjunctiveEffect(object):
 
 
 class ProbabilisticEffect(object):
-    def __init__(self, effect_probability_pairs):
+    def __init__(self, effect_probability_pairs: List[Tuple[Fraction, ConjunctiveEffect]]):
         flattened_pairs = []
         for probability, effect in effect_probability_pairs:
             if isinstance(effect, ProbabilisticEffect):
@@ -376,13 +379,13 @@ class ProbabilisticEffect(object):
             print(f"{indent}{prob}")
             eff.dump(indent + "  ")
 
-    def normalize(self):
+    def normalize(self) -> "ProbabilisticEffect":
         normalized_pairs = [(probability, effect.normalize()) for
                             probability, effect in
                             self.effect_probability_pairs]
         return ProbabilisticEffect(normalized_pairs)
 
-    def extract_cost(self):
+    def extract_cost(self) -> Tuple["CostEffect", "ProbabilisticEffect"]:
         remaining_pairs = []
         weighted_cost = 0
         fluent = None
@@ -415,7 +418,7 @@ class ProbabilisticEffect(object):
 
 
 class OneOfEffect(object):
-    def __init__(self, effects):
+    def __init__(self, effects: List[AnyEffect]):
         # Flatten nested effects
         flattened_effects = []
         for effect in effects:
@@ -425,18 +428,18 @@ class OneOfEffect(object):
                 flattened_effects.append(effect)
         self.effects = flattened_effects
 
-    def dump(self, indent="  "):
+    def dump(self, indent: str="  "):
         print("%soneof" % (indent))
         for eff in self.effects:
             eff.dump(indent + "  ")
 
-    def normalize(self):
+    def normalize(self) -> "OneOfEffect":
         return OneOfEffect([effect.normalize() for effect in self.effects])
 
     def normalize_oneof(self):
         return OneOfEffect([effect.normalize_oneof() for effect in self.effects])
 
-    def extract_cost(self):
+    def extract_cost(self) -> Tuple["CostEffect", "OneOfEffect"]:
         new_effects = [eff.extract_cost() for eff in self.effects]
         if len(set(c for c, r in new_effects)) == 1:
             cost_effect = new_effects[0][0]
@@ -447,13 +450,13 @@ class OneOfEffect(object):
 
 
 class SimpleEffect(object):
-    def __init__(self, effect):
+    def __init__(self, effect: Union[NegatedAtom, Atom]):
         self.effect = effect
 
-    def dump(self, indent="  "):
+    def dump(self, indent: str="  "):
         print("%s%s" % (indent, self.effect))
 
-    def normalize(self):
+    def normalize(self) -> "SimpleEffect":
         return self
 
     def normalize_oneof(self):
@@ -464,13 +467,13 @@ class SimpleEffect(object):
 
 
 class CostEffect(object):
-    def __init__(self, effect):
+    def __init__(self, effect: Increase):
         self.effect = effect
 
     def dump(self, indent="  "):
         print("%s%s" % (indent, self.effect))
 
-    def normalize(self):
+    def normalize(self) -> "CostEffect":
         return self
 
     def extract_cost(self):
