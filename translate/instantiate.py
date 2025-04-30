@@ -12,9 +12,10 @@ import timers
 def get_fluent_facts(task, model):
     fluent_predicates = set()
     for action in task.actions:
-        for _, effects in action.outcomes:
-            for effect in effects:
-                fluent_predicates.add(effect.literal.predicate)
+        for adversarial_outcome in action.outcomes:
+            for _, effects in adversarial_outcome:
+                for effect in effects:
+                    fluent_predicates.add(effect.literal.predicate)
     for axiom in task.axioms:
         fluent_predicates.add(axiom.name)
     return {fact for fact in model

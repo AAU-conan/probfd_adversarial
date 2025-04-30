@@ -32,8 +32,9 @@ class Action(object):
 
     def determinize(self):
         det_actions = []
-        for i, (_, effects) in enumerate(self.outcomes):
-            det_actions.append(DeterminizedAction(self.name + f"_outcome_{i}",
+        for i, adversarial_outcome in enumerate(self.outcomes):
+            for j, (_, effects) in enumerate(adversarial_outcome):
+                det_actions.append(DeterminizedAction(self.name + f"_outcome_{i}_{j}",
                                                   self.parameters,
                                                   self.num_external_parameters,
                                                   self.precondition, effects,
@@ -65,9 +66,10 @@ class Action(object):
     def uniquify_variables(self):
         self.type_map = {par.name: par.type_name for par in self.parameters}
         self.precondition = self.precondition.uniquify_variables(self.type_map)
-        for prob, effects in self.outcomes:
-            for effect in effects:
-                effect.uniquify_variables(self.type_map)
+        for adversarial_outcome in self.outcomes:
+            for prob, effects in adversarial_outcome:
+                for effect in effects:
+                    effect.uniquify_variables(self.type_map)
 
     def relaxed(self):
         new_outcomes = []
@@ -117,12 +119,13 @@ class Action(object):
             return None
 
         inst_outcomes = []
-        for prob, effects in self.outcomes:
-            inst_effects = []
-            for eff in effects:
-                eff.instantiate(var_mapping, init_facts, fluent_facts,
-                                objects_by_type, inst_effects)
-            inst_outcomes.append((prob, inst_effects))
+        for adversarial_outcome in self.outcomes:
+            for prob, effects in adversarial_outcome:
+                inst_effects = []
+                for eff in effects:
+                    eff.instantiate(var_mapping, init_facts, fluent_facts,
+                                    objects_by_type, inst_effects)
+                inst_outcomes.append((prob, inst_effects))
 
         if metric != Metric.NONE:
             if self.weight is None:

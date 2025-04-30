@@ -1,6 +1,8 @@
 from fractions import Fraction
-from typing import List, Union, Tuple
+from functools import reduce
+from typing import List, Union, Tuple, Any
 
+from pddl_parser.parse_error import ParseError
 from . import conditions
 from .conditions import Condition, Literal
 from .f_expression import Increase, NumericConstant, ArithmeticExpression
@@ -12,7 +14,9 @@ AnyEffect = Union[
     "UniversalEffect",
     "SimpleEffect",
     "CostEffect",
-    "ProbabilisticEffect"]
+    "ProbabilisticEffect",
+    "OneOfEffect"
+]
 
 
 def cartesian_product(*sequences):
@@ -177,6 +181,9 @@ class ConditionalEffect(object):
         else:
             return ConditionalEffect(self.condition, norm_effect)
 
+    def normalize_oneof(self):
+        raise NotImplementedError("One of normalization of conditional effects is not implemented.")
+
     def extract_cost(self):
         return None, self
 
@@ -217,6 +224,9 @@ class UniversalEffect(object):
             return ConjunctiveEffect(new_effects)
         else:
             return UniversalEffect(self.parameters, norm_effect)
+
+    def normalize_oneof(self):
+        raise NotImplementedError("One of normalization of universal effects is not implemented.")
 
     def extract_cost(self):
         assert self.effect.extract_cost()[0] is None, \
@@ -295,6 +305,23 @@ class ConjunctiveEffect(object):
             probability, effect in multiplied_out_pairs]
 
         return ProbabilisticEffect(new_pairs)
+
+    def normalize_oneof(self):
+        normal_effects = [effect.normalize() for effect in self.effects if not isinstance(effect, OneOfEffect)]
+        oneof_effects = [effect.normalize() for effect in self.effects if isinstance(effect, OneOfEffect)]
+
+        if not oneof_effects:
+            return ConjunctiveEffect(normal_effects)
+
+        # Use the rule
+        # oneof(e1,e2) ∧ oneof(e3,e4) = oneof(e1 ∧ e3, e1 ∧ e4, e2 ∧ e3, e2 ∧ e4)
+        new_effects = cartesian_product(*[effect.effects for effect in oneof_effects])
+
+        # Use the rule
+        # oneof(e1,e2) ∧ e3 = oneof(e1 ∧ e3, e2 ∧ e3)
+        new_effects = [ConjunctiveEffect(list(effects) + normal_effects) for effects in new_effects]
+
+        return OneOfEffect(new_effects)
 
     def extract_cost(self):
         new_effects = []
@@ -387,6 +414,38 @@ class ProbabilisticEffect(object):
         return cost_effect, ProbabilisticEffect(remaining_pairs)
 
 
+class OneOfEffect(object):
+    def __init__(self, effects):
+        # Flatten nested effects
+        flattened_effects = []
+        for effect in effects:
+            if isinstance(effect, OneOfEffect):
+                flattened_effects += effect.effects
+            else:
+                flattened_effects.append(effect)
+        self.effects = flattened_effects
+
+    def dump(self, indent="  "):
+        print("%soneof" % (indent))
+        for eff in self.effects:
+            eff.dump(indent + "  ")
+
+    def normalize(self):
+        return OneOfEffect([effect.normalize() for effect in self.effects])
+
+    def normalize_oneof(self):
+        return OneOfEffect([effect.normalize_oneof() for effect in self.effects])
+
+    def extract_cost(self):
+        new_effects = [eff.extract_cost() for eff in self.effects]
+        if len(set(c for c, r in new_effects)) == 1:
+            cost_effect = new_effects[0][0]
+            return cost_effect, OneOfEffect([r for c, r in new_effects])
+        else:
+            raise ParseError("Costs in all oneof effects must be the same.")
+
+
+
 class SimpleEffect(object):
     def __init__(self, effect):
         self.effect = effect
@@ -395,6 +454,9 @@ class SimpleEffect(object):
         print("%s%s" % (indent, self.effect))
 
     def normalize(self):
+        return self
+
+    def normalize_oneof(self):
         return self
 
     def extract_cost(self):

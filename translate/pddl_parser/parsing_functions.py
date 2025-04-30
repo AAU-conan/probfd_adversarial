@@ -347,9 +347,10 @@ def parse_outcomes(
     with context.layer("Parsing effect"):
         tmp_effect = parse_effect(
             context, alist, type_dict, predicate_dict, has_reward_fluent)
-        normalized = tmp_effect.normalize()
+        normalized = tmp_effect.normalize().normalize_oneof()
         cost_eff, rest_effect = normalized.extract_cost()
-        add_probabilistic_outcomes(rest_effect, result)
+        rest_effect.dump()
+        add_adversarial_outcomes(rest_effect, result)
         if cost_eff:
             return cost_eff.effect
         else:
@@ -369,6 +370,20 @@ def add_probabilistic_outcomes(tmp_effect, result):
         effects = []
         add_effects(tmp_effect, effects)
         result.append((Fraction(1), effects))
+
+def add_adversarial_outcomes(tmp_effect, result):
+    """tmp_effect has the following structure:
+       [ProbabilisticEffect] [ConjunctiveEffect] [UniversalEffect]
+       [ConditionalEffect] SimpleEffect."""
+    if isinstance(tmp_effect, pddl.OneOfEffect):
+        for effect in tmp_effect.effects:
+            effects = []
+            add_probabilistic_outcomes(effect, effects)
+            result.append(effects)
+    else:
+        effects = []
+        add_probabilistic_outcomes(tmp_effect, effects)
+        result.append(effects)
 
 
 def add_effects(tmp_effect, result):
@@ -530,6 +545,17 @@ def parse_effect(context, alist, type_dict, predicate_dict, has_reward_fluent):
                              pddl.ConjunctiveEffect([])))
 
         return pddl.ProbabilisticEffect(outcomes)
+    elif tag == "oneof":
+        effects = []
+        for eff in alist[1:]:
+            if not isinstance(eff, list):
+                context.error(
+                    "All sub-effects of a oneof have to be blocks.",
+                    eff)
+            effects.append(
+                parse_effect(
+                    context, eff, type_dict, predicate_dict, has_reward_fluent))
+        return pddl.OneOfEffect(effects)
     else:
         # We pass in {} instead of type_dict here because types must
         # be static predicates, so cannot be the target of an effect.

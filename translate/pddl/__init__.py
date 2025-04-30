@@ -18,6 +18,7 @@ from .effects import CostEffect
 from .effects import Effect
 from .effects import ProbabilisticEffect
 from .effects import ProbabilisticOutcomes
+from .effects import OneOfEffect
 from .effects import SimpleEffect
 from .effects import UniversalEffect
 from .f_expression import ArithmeticExpression
