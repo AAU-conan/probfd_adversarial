@@ -162,10 +162,9 @@ def get_axiom_predicate(axiom):
 def all_conditions(task):
     for action in task.actions:
         yield PreconditionProxy(action)
-        for adversarial_outcome in action.outcomes:
-            for _, effects in adversarial_outcome:
-                for effect in effects:
-                    yield EffectConditionProxy(action, effect)
+        for effects in action.outcome_effects():
+            for effect in effects:
+                yield EffectConditionProxy(action, effect)
     for axiom in task.axioms:
         yield AxiomConditionProxy(axiom)
     yield GoalConditionProxy(task)
@@ -358,14 +357,13 @@ def eliminate_existential_quantifiers_from_preconditions(task):
 # "forall(x): when phi then e.
 def eliminate_existential_quantifiers_from_conditional_effects(task):
     for action in task.actions:
-        for adversarial_outcome in action.outcomes:
-            for _, effects in adversarial_outcome:
-                for effect in effects:
-                    condition = effect.condition
-                    if isinstance(condition, pddl.ExistentialCondition):
-                        effect.parameters = list(effect.parameters)
-                        effect.parameters.extend(condition.parameters)
-                        effect.condition = condition.parts[0]
+        for effects in action.outcome_effects():
+            for effect in effects:
+                condition = effect.condition
+                if isinstance(condition, pddl.ExistentialCondition):
+                    effect.parameters = list(effect.parameters)
+                    effect.parameters.extend(condition.parameters)
+                    effect.condition = condition.parts[0]
 
 
 # Combine Steps [1], [2], [3], [4], [5] and do some additional verification
@@ -414,13 +412,12 @@ def verify_axiom_predicates(task):
                 (fact.predicate, fact))
 
     for action in task.actions:
-        for adversarial_outcome in action.outcomes:
-            for _, effects in adversarial_outcome:
-                for effect in effects:
-                    if effect.literal.predicate in axiom_names:
-                        raise SystemExit(
-                            "error: derived predicate %r appears in effect of action %r" %
-                            (effect.literal.predicate, action.name))
+        for effects in action.outcome_effects():
+            for effect in effects:
+                if effect.literal.predicate in axiom_names:
+                    raise SystemExit(
+                        "error: derived predicate %r appears in effect of action %r" %
+                        (effect.literal.predicate, action.name))
 
 
 # [6] Build rules for exploration component.

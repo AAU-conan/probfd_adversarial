@@ -14,7 +14,7 @@ class Action(object):
     def __init__(self, name: str, parameters: List[TypedObject],
                  num_external_parameters: int,
                  precondition: Condition,
-                 outcomes: List[Tuple[Fraction, List[Effect]]],
+                 outcomes: Union[List[List[Effect]], List[Tuple[Fraction, List[Effect]]]],
                  weight: Optional[Union[Increase]]):
         assert 0 <= num_external_parameters <= len(parameters)
         self.name = name
@@ -30,11 +30,16 @@ class Action(object):
         self.weight = weight
         self.uniquify_variables()  # TODO: uniquify variables in weight?
 
+    def outcome_effects(self):
+        if isinstance(self.outcomes, list):
+            return self.outcomes
+        elif isinstance(self.outcomes, tuple):
+            return self.outcomes[1]
+
     def determinize(self):
         det_actions = []
-        for i, adversarial_outcome in enumerate(self.outcomes):
-            for j, (_, effects) in enumerate(adversarial_outcome):
-                det_actions.append(DeterminizedAction(self.name + f"_outcome_{i}_{j}",
+        for i, effects in enumerate(self.outcome_effects()):
+            det_actions.append(DeterminizedAction(self.name + f"_outcome_{i}",
                                                   self.parameters,
                                                   self.num_external_parameters,
                                                   self.precondition, effects,
@@ -50,8 +55,12 @@ class Action(object):
         print("Precondition:")
         self.precondition.dump()
         print("Outcomes:")
-        for prob, effects in self.outcomes:
-            print("  Probability: %s" % prob)
+        for outcome in self.outcomes:
+            if isinstance(outcome, tuple):
+                prob, effects = outcome
+                print("  Probability: %s" % prob)
+            else: # Outcome is adversarial
+                effects = outcome
             for eff in effects:
                 eff.dump(indent="    ")
         print("Weight:")
@@ -66,13 +75,13 @@ class Action(object):
     def uniquify_variables(self):
         self.type_map = {par.name: par.type_name for par in self.parameters}
         self.precondition = self.precondition.uniquify_variables(self.type_map)
-        for adversarial_outcome in self.outcomes:
-            for prob, effects in adversarial_outcome:
-                for effect in effects:
-                    effect.uniquify_variables(self.type_map)
+        for effects in self.outcome_effects():
+            for effect in effects:
+                effect.uniquify_variables(self.type_map)
 
     def relaxed(self):
         new_outcomes = []
+        assert False
         for prob, effects in self.outcomes:
             new_effects = []
             for eff in effects:
@@ -94,6 +103,7 @@ class Action(object):
         new_precondition = self.precondition.untyped()
         result.precondition = conditions.Conjunction(
             parameter_atoms + [new_precondition])
+        assert False
         result.outcomes = [(prob, [eff.untyped() for eff in effects])
                            for prob, effects in self.outcomes]
         return result
@@ -119,13 +129,15 @@ class Action(object):
             return None
 
         inst_outcomes = []
-        for adversarial_outcome in self.outcomes:
-            for prob, effects in adversarial_outcome:
-                inst_effects = []
-                for eff in effects:
-                    eff.instantiate(var_mapping, init_facts, fluent_facts,
-                                    objects_by_type, inst_effects)
-                inst_outcomes.append((prob, inst_effects))
+        for outcome in self.outcomes:
+            inst_effects = []
+            for eff in (outcome if isinstance(outcome, list) else outcome[1]):
+                eff.instantiate(var_mapping, init_facts, fluent_facts,
+                                objects_by_type, inst_effects)
+            if isinstance(outcome, tuple):
+                inst_outcomes.append((outcome[0], inst_effects))
+            else:
+                inst_outcomes.append(inst_effects)
 
         if metric != Metric.NONE:
             if self.weight is None:
@@ -246,18 +258,20 @@ class DeterminizedAction:
 
 class PropositionalAction:
     class StripsOutcome:
-        def __init__(self, probability: Fraction):
+        def __init__(self, probability: Union[Fraction, None] = None):
             self.probability = probability
             self.add_effects = []
             self.del_effects = []
 
     def __init__(self, name: str, precondition: List[Literal],
-                 outcomes: List[Tuple[Fraction, List[Effect]]],
+                 outcomes: Union[List[List[Effect]], List[Tuple[Fraction, List[Effect]]]],
                  weight: Fraction):
         self.name = name
         self.precondition = precondition
         self.strips_outcomes = []
-        for prob, effects in outcomes:
+
+        for outcome in outcomes:
+            prob, effects = outcome if isinstance(outcome, tuple) else None, outcome
             strips_outcome = self.StripsOutcome(prob)
             for condition, effect in effects:
                 if not effect.negated:

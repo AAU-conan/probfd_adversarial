@@ -1,6 +1,6 @@
 import itertools
 from fractions import Fraction
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 from pddl import Metric
 
@@ -281,7 +281,7 @@ class SASGoal:
 
 class SASOutcome:
     def __init__(self,
-                 probability: Fraction,
+                 probability: Union[Fraction, None],
                  cond_eff: List[Tuple[VarValPair, List[VarValPair]]]) -> None:
         self.probability = probability
         self.cond_eff = self._canonical_cond_eff(cond_eff)
@@ -383,7 +383,7 @@ class SASOutcome:
             print("    v%d -> %d%s" % (var, post, cond_str))
 
     def output(self, stream):
-        print(self.probability, file=stream)
+        print(self.probability if self.probability is not None else -1, file=stream)
         print(len(self.cond_eff), file=stream)
         for (var, post), cond in self.cond_eff:
             print(len(cond), end=' ', file=stream)

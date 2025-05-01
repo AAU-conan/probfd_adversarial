@@ -350,14 +350,14 @@ def parse_outcomes(
         normalized = tmp_effect.normalize().normalize_oneof()
         cost_eff, rest_effect = normalized.extract_cost()
         rest_effect.dump()
-        add_adversarial_outcomes(rest_effect, result)
+        add_outcomes(rest_effect, result)
         if cost_eff:
             return cost_eff.effect
         else:
             return None
 
 
-def add_probabilistic_outcomes(tmp_effect, result):
+def add_outcomes(tmp_effect, result):
     """tmp_effect has the following structure:
        [ProbabilisticEffect] [ConjunctiveEffect] [UniversalEffect]
        [ConditionalEffect] SimpleEffect."""
@@ -366,23 +366,14 @@ def add_probabilistic_outcomes(tmp_effect, result):
             effects = []
             add_effects(effect, effects)
             result.append((prob, effects))
-    else:
-        effects = []
-        add_effects(tmp_effect, effects)
-        result.append((Fraction(1), effects))
-
-def add_adversarial_outcomes(tmp_effect, result):
-    """tmp_effect has the following structure:
-       [ProbabilisticEffect] [ConjunctiveEffect] [UniversalEffect]
-       [ConditionalEffect] SimpleEffect."""
     if isinstance(tmp_effect, pddl.OneOfEffect):
         for effect in tmp_effect.effects:
             effects = []
-            add_probabilistic_outcomes(effect, effects)
+            add_effects(effect, effects)
             result.append(effects)
     else:
         effects = []
-        add_probabilistic_outcomes(tmp_effect, effects)
+        add_effects(tmp_effect, effects)
         result.append(effects)
 
 

@@ -299,7 +299,7 @@ def translate_strips_operator_aux(operator: PropositionalAction, dictionary: Dic
                                  outcomes, operator.weight)
 
 
-def build_sas_outcome(probability: Fraction, condition: Dict[int, int], effects_by_variable: Union[DefaultDict[int, DefaultDict[int, List[Dict[int, int]]]], DefaultDict[int, DefaultDict[int, List[Dict[Any, Any]]]], DefaultDict[int, Union[DefaultDict[int, List[Dict[Any, Any]]], DefaultDict[int, List[Dict[int, int]]]]]],
+def build_sas_outcome(probability: Union[Fraction, None], condition: Dict[int, int], effects_by_variable: Union[DefaultDict[int, DefaultDict[int, List[Dict[int, int]]]], DefaultDict[int, DefaultDict[int, List[Dict[Any, Any]]]], DefaultDict[int, Union[DefaultDict[int, List[Dict[Any, Any]]], DefaultDict[int, List[Dict[int, int]]]]]],
                       ranges: List[int], implied_facts: Dict[Any, Any]) -> sas_tasks.SASOutcome:
     if options.add_implied_preconditions:
         implied_precondition = set()
