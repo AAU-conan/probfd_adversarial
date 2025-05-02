@@ -90,7 +90,7 @@ void Distribution<T>::clear()
 template <typename T>
 void Distribution<T>::add_probability(T t, value_t prob)
 {
-    assert(prob > 0.0);
+    // assert(prob > 0.0);
 
     auto it = this->find(t);
 

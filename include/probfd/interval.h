@@ -30,6 +30,9 @@ struct Interval {
     /// Equivalent to *this = (*this) / factor
     Interval& operator/=(value_t dividend);
 
+    /// Implements > operator for intervals.
+    bool operator>(const Interval& rhs) const;
+
     /// Returns the length of the interval. If both bounds are infinity and
     /// have the same sign, returns 0.
     [[nodiscard]]

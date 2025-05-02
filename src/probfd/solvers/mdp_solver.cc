@@ -24,6 +24,7 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <print>
 
 using namespace downward;
 using namespace downward::utils;
@@ -173,42 +174,46 @@ public:
             if (policy) {
                 using namespace std;
 
-                print_analysis_result(
-                    policy->get_decision(initial_state)->q_value_interval);
+                auto result = policy->get_decision(initial_state);
+                if (!result.has_value()) {
+                    std::println("No policy found for the initial state.");
+                } else {
+                    print_analysis_result(result->q_value_interval);
 
-                std::ofstream out(policy_filename);
-                auto print_state = [this](
-                                       const State& state,
-                                       std::ostream& out) {
-                    if (print_fact_names) {
-                        out << state[0].get_name();
-                        for (const FactProxy& fact : state | views::drop(1)) {
-                            out << ", " << fact.get_name();
+                    std::ofstream out(policy_filename);
+                    auto print_state = [this](
+                                           const State& state,
+                                           std::ostream& out) {
+                        if (print_fact_names) {
+                            out << state[0].get_name();
+                            for (const FactProxy& fact : state | views::drop(1)) {
+                                out << ", " << fact.get_name();
+                            }
+                        } else {
+                            out << "{ " << state[0].get_variable().get_id()
+                                << " -> " << state[0].get_value();
+
+                            for (const FactProxy& fact : state | views::drop(1)) {
+                                const auto [var, val] = fact.get_pair();
+                                out << ", " << var << " -> " << val;
+                            }
+                            out << " }";
                         }
-                    } else {
-                        out << "{ " << state[0].get_variable().get_id()
-                            << " -> " << state[0].get_value();
-
-                        for (const FactProxy& fact : state | views::drop(1)) {
-                            const auto [var, val] = fact.get_pair();
-                            out << ", " << var << " -> " << val;
-                        }
-                        out << " }";
-                    }
-                };
-
-                auto print_action =
-                    [this](const OperatorID& op_id, std::ostream& out) {
-                        out << this->task->get_operator_name(op_id.get_index());
                     };
 
-                print_policy(
-                    out,
-                    print_state,
-                    print_action,
-                    *policy,
-                    mdp,
-                    initial_state);
+                    auto print_action =
+                        [this](const OperatorID& op_id, std::ostream& out) {
+                            out << this->task->get_operator_name(op_id.get_index());
+                    };
+
+                    print_policy(
+                        out,
+                        print_state,
+                        print_action,
+                        *policy,
+                        mdp,
+                        initial_state);
+                }
             }
 
             std::cout << std::endl;

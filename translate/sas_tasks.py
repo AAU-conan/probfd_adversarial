@@ -383,7 +383,7 @@ class SASOutcome:
             print("    v%d -> %d%s" % (var, post, cond_str))
 
     def output(self, stream):
-        print(self.probability if self.probability is not None else -1, file=stream)
+        print(self.probability if self.probability is not None else -0xFACE, file=stream)
         print(len(self.cond_eff), file=stream)
         for (var, post), cond in self.cond_eff:
             print(len(cond), end=' ', file=stream)

@@ -38,6 +38,14 @@ Interval& Interval::operator/=(value_t dividend)
     return *this;
 }
 
+bool Interval::operator>(const Interval& rhs) const
+{
+    throw std::runtime_error(
+        "Interval comparison is not well defined.");
+    return lower < rhs.lower ||
+           (lower == rhs.lower && upper < rhs.upper);
+}
+
 double Interval::length() const
 {
     // Handles infinities!

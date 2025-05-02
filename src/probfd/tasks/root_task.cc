@@ -249,6 +249,7 @@ void check_facts(
 {
     check_facts(action.preconditions, variables);
 
+    return; // Disabled because adversarial search has no probability
     Fraction total_prob = {0, 1};
 
     for (const auto& outcome : action.outcomes) {
@@ -345,32 +346,35 @@ ProbabilisticOutcome::ProbabilisticOutcome(std::istream& in)
         }
     }
 
-    if (fractional_probability.numerator < 0) {
-        fractional_probability.numerator = -fractional_probability.numerator;
-        fractional_probability.denominator =
-            -fractional_probability.denominator;
+    if (fractional_probability.numerator != -0xFACE) { // Hack for when it is adversarial
+        if (fractional_probability.numerator < 0) {
+            fractional_probability.numerator = -fractional_probability.numerator;
+            fractional_probability.denominator =
+                -fractional_probability.denominator;
+        }
+
+        if (fractional_probability.numerator < 0) {
+            cerr << "Probability must be grater than zero: " << p << endl;
+            utils::exit_with(ExitCode::SEARCH_INPUT_ERROR);
+        }
+
+        if (fractional_probability.numerator > fractional_probability.denominator) {
+            cerr << "Probability must be less or equal to one: " << p << endl;
+            utils::exit_with(ExitCode::SEARCH_INPUT_ERROR);
+        }
+
+        const int gcd = std::gcd(
+            fractional_probability.numerator,
+            fractional_probability.denominator);
+
+        fractional_probability.numerator /= gcd;
+        fractional_probability.denominator /= gcd;
     }
-
-    if (fractional_probability.numerator < 0) {
-        cerr << "Probability must be grater than zero: " << p << endl;
-        utils::exit_with(ExitCode::SEARCH_INPUT_ERROR);
-    }
-
-    if (fractional_probability.numerator > fractional_probability.denominator) {
-        cerr << "Probability must be less or equal to one: " << p << endl;
-        utils::exit_with(ExitCode::SEARCH_INPUT_ERROR);
-    }
-
-    const int gcd = std::gcd(
-        fractional_probability.numerator,
-        fractional_probability.denominator);
-
-    fractional_probability.numerator /= gcd;
-    fractional_probability.denominator /= gcd;
 
     probability = fraction_to_value(
         fractional_probability.numerator,
         fractional_probability.denominator);
+
 
     // Read number of effects
     int count;

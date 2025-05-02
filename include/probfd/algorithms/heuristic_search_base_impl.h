@@ -293,17 +293,19 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_qvalue(
     const TransitionTailType& transition,
     CostFunctionType& cost_function) const -> AlgorithmValueType
 {
-    AlgorithmValueType t_value(
-        cost_function.get_action_cost(transition.action));
-
+    // Compute the maximum of the successors
+    AlgorithmValueType t_value(-INFINITE_VALUE);
     for (const auto& [succ_id, prob] :
          transition.successor_dist.non_source_successor_dist) {
-        t_value += prob * state_infos_[succ_id].value;
+        if (state_infos_[succ_id].value > t_value) {
+            t_value = state_infos_[succ_id].value;
+        }
     }
+    t_value += AlgorithmValueType(cost_function.get_action_cost(transition.action));
 
     assert(transition.successor_dist.non_source_probability != 0_vt);
 
-    return t_value / transition.successor_dist.non_source_probability;
+    return t_value;
 }
 
 template <typename State, typename Action, typename StateInfoT>
