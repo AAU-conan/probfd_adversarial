@@ -59,8 +59,7 @@ class CausalGraph:
                 for (target, _), cond in outcome.cond_eff:
                     for source in chain(source_vars, (var for var, _ in cond)):
                         if source != target:
-                            self.weighted_graph[source][target] += (
-                                outcome.probability)
+                            self.weighted_graph[source][target] += (outcome.probability if outcome.probability is not None else 1 / len(op.outcomes))
                             self.predecessor_graph[target].add(source)
 
     def weight_graph_from_axioms(self, axioms):
