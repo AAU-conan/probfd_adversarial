@@ -957,7 +957,7 @@ def parse_task_pddl(
             yield parse_condition(context, goal[1], type_dict, predicate_dict)
 
         prev, iterator = tee(iterator)
-        goal_reward = next(iterator)
+        goal_reward = next(iterator, None)
         if check_named_block(goal_reward, [":goal-reward"]):
             if not has_reward_fluent:
                 context.error("Goal reward construct requires :rewards "
@@ -976,7 +976,7 @@ def parse_task_pddl(
             iterator = prev
             yield None
 
-        metric = pddl.Metric.NONE
+        metric = pddl.Metric.MINIMIZE
         for entry in iterator:
             if isinstance(entry, list) and entry[0] == ":metric":
                 with context.layer("Parsing metric"):

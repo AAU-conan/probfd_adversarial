@@ -90,7 +90,8 @@ class Requirements:
                 ":existential-preconditions", ":universal-preconditions",
                 ":quantified-preconditions", ":conditional-effects",
                 ":derived-predicates", ":action-costs",
-                ":probabilistic-effects", ":rewards", ":mdp"), req
+                ":probabilistic-effects", ":rewards", ":mdp",
+                ":non-deterministic"), req
 
     def __str__(self):
         return ", ".join(self.requirements)
