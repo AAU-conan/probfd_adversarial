@@ -447,12 +447,7 @@ ExplicitAxiom::ExplicitAxiom(std::istream& in)
 {
     name = "<axiom>";
     check_magic(in, "begin_rule");
-    int count;
-    in >> count;
-    effects.reserve(count);
-    for (int i = 0; i < count; ++i) {
-        read_pre_post(in);
-    }
+    read_pre_post(in);
     check_magic(in, "end_rule");
 }
 
