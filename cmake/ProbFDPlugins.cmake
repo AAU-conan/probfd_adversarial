@@ -134,6 +134,7 @@ create_library(
         probfd_core
         parser
         plugins
+        search_space_draw
     TARGET
         probfd
 )

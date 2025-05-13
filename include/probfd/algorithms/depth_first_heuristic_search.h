@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <iostream>
+#include <probfd/search_space_draw.h>
 #include <type_traits>
 #include <vector>
 

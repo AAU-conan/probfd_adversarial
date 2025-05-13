@@ -3,9 +3,9 @@
 
 #include "probfd/cost_function.h" // IWYU pragma: export
 #include "probfd/state_space.h"   // IWYU pragma: export
+#include "probfd/task_proxy.h"
 
 namespace probfd {
-
 /**
  * @brief Basic interface for MDPs.
  */
@@ -18,6 +18,9 @@ class MDP
      * interface.
      */
     virtual void print_statistics() const {}
+
+public:
+    std::shared_ptr<ProbabilisticTaskProxy> task_proxy = nullptr;
 };
 
 /**

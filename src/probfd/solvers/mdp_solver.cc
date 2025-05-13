@@ -157,6 +157,8 @@ public:
                 *state_space,
                 *task_cost_function};
 
+            mdp.task_proxy = std::make_shared<ProbabilisticTaskProxy>(*task);
+
             std::unique_ptr<Policy<State, OperatorID>> policy =
                 algorithm->compute_policy(
                     mdp,

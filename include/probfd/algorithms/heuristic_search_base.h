@@ -9,6 +9,7 @@
 #include "probfd/algorithms/utils.h"
 
 #include "probfd/progress_report.h"
+#include "probfd/search_space_draw.h"
 
 #if defined(EXPENSIVE_STATISTICS)
 #include "downward/utils/timer.h"
@@ -145,6 +146,8 @@ protected:
     internal::StateInfos<StateInfo> state_infos_;
 
     internal::Statistics statistics_;
+
+    std::unique_ptr<SearchSpaceDrawer> search_space_drawer = nullptr;
 
 public:
     explicit HeuristicSearchBase(

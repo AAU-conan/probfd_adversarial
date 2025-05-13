@@ -398,3 +398,20 @@ create_library(
     DEPENDS
         pa_merge_and_shrink
 )
+
+create_library(
+    NAME graphviz
+    HELP "Graphviz"
+    SOURCES
+        probfd/graphviz
+    DEPENDENCY_ONLY
+)
+
+create_library(
+    NAME search_space_draw
+    HELP "Enables the search space drawer"
+    SOURCES
+        probfd/search_space_draw
+    DEPENDS
+        graphviz
+)

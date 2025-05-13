@@ -14,10 +14,13 @@
 #include "probfd/mdp.h"
 #include "probfd/transition_tail.h"
 
+#include "probfd/utils/state_name.h"
+
 #include "downward/utils/collections.h"
 
 #include <cassert>
 #include <deque>
+#include <print>
 
 namespace probfd::algorithms::heuristic_search {
 
@@ -112,11 +115,13 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_bellman_and_greedy(
     if (as_lower_bound(best_value) >= termination_cost) {
         transition_tails.clear();
         qvalues.clear();
+        this->search_space_drawer->set_q_value(source_state, termination_cost);
         return AlgorithmValueType(termination_cost);
     }
 
     filter_greedy_transitions(transition_tails, qvalues, best_value);
 
+    this->search_space_drawer->set_q_value(source_state, best_value);
     return best_value;
 }
 
@@ -217,12 +222,15 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     }
 
     for (auto& transition : transition_tails) {
+        std::vector<State> successors;
         for (const auto& [succ_id, prob] :
              transition.successor_dist.non_source_successor_dist) {
             auto& succ_info = state_infos_[succ_id];
+            successors.push_back(mdp.get_state(succ_id));
             if (succ_info.is_value_initialized()) continue;
             initialize(mdp, h, mdp.get_state(succ_id), succ_info);
         }
+        search_space_drawer->add_successor(state, transition.action, successors);
     }
 }
 
@@ -269,6 +277,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
         statistics_.goal_states++;
         state_info.set_goal();
         state_info.value = AlgorithmValueType(t_cost);
+        search_space_drawer->set_q_value(state, state_info.value);
         return;
     }
 
@@ -279,6 +288,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
     } else {
         state_info.value = estimate;
     }
+    search_space_drawer->set_q_value(state, state_info.value);
 
     if (estimate == t_cost) {
         statistics_.pruned_states++;
@@ -373,6 +383,7 @@ Interval HeuristicSearchAlgorithm<State, Action, StateInfoT>::solve(
     ProgressReport progress,
     double max_time)
 {
+    this->search_space_drawer = std::make_unique<SearchSpaceDrawer>("search_space.dot", *mdp.task_proxy);
     HSBase::initialize_initial_state(mdp, h, state);
     return this->do_solve(mdp, h, state, progress, max_time);
 }
@@ -454,6 +465,7 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
         }
     } while (!queue.empty());
 
+    this->search_space_drawer->draw_search_space(*policy);
     return policy;
 }
 

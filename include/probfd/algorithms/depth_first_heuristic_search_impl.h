@@ -3,8 +3,11 @@
 #endif
 
 #include "downward/utils/countdown_timer.h"
+#include "probfd/search_space_draw.h"
+#include "probfd/utils/state_name.h"
 
 #include <cassert>
+#include <print>
 
 namespace probfd::algorithms::heuristic_depth_first_search {
 
