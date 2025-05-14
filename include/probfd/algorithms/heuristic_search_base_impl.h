@@ -115,13 +115,17 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_bellman_and_greedy(
     if (as_lower_bound(best_value) >= termination_cost) {
         transition_tails.clear();
         qvalues.clear();
+#ifndef NDEBUG
         this->search_space_drawer->set_q_value(source_state, termination_cost);
+#endif
         return AlgorithmValueType(termination_cost);
     }
 
     filter_greedy_transitions(transition_tails, qvalues, best_value);
 
+#ifndef NDEBUG
     this->search_space_drawer->set_q_value(source_state, best_value);
+#endif
     return best_value;
 }
 
@@ -230,7 +234,9 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
             if (succ_info.is_value_initialized()) continue;
             initialize(mdp, h, mdp.get_state(succ_id), succ_info);
         }
+#ifndef NDEBUG
         search_space_drawer->add_successor(state, transition.action, successors);
+#endif
     }
 }
 
@@ -277,7 +283,9 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
         statistics_.goal_states++;
         state_info.set_goal();
         state_info.value = AlgorithmValueType(t_cost);
+#ifndef NDEBUG
         search_space_drawer->set_q_value(state, state_info.value);
+#endif
         return;
     }
 
@@ -288,7 +296,9 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
     } else {
         state_info.value = estimate;
     }
+#ifndef NDEBUG
     search_space_drawer->set_q_value(state, state_info.value);
+#endif
 
     if (estimate == t_cost) {
         statistics_.pruned_states++;
@@ -383,7 +393,9 @@ Interval HeuristicSearchAlgorithm<State, Action, StateInfoT>::solve(
     ProgressReport progress,
     double max_time)
 {
+#ifndef NDEBUG
     this->search_space_drawer = std::make_unique<SearchSpaceDrawer>("search_space.dot", *mdp.task_proxy);
+#endif
     HSBase::initialize_initial_state(mdp, h, state);
     return this->do_solve(mdp, h, state, progress, max_time);
 }
@@ -465,7 +477,9 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
         }
     } while (!queue.empty());
 
-    this->search_space_drawer->draw_search_space(*policy);
+#ifndef NDEBUG
+    this->search_space_drawer->draw_search_space(&*policy);
+#endif
     return policy;
 }
 

@@ -124,6 +124,9 @@ void HeuristicDepthFirstSearch<State, Action, UseInterval>::
         terminate = policy_exploration(mdp, heuristic, stateid, timer);
         ++statistics_.iterations;
         progress.print();
+#ifndef NDEBUG
+        this->search_space_drawer->draw_search_space();
+#endif
         assert(visited_states_.empty());
     } while (!terminate);
 }

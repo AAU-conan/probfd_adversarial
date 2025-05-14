@@ -63,11 +63,11 @@ namespace probfd {
         void set_q_value(const downward::State &state, value_t value);
 
         template <typename State, typename Action>
-        void draw_search_space(const Policy<State, Action>& policy)
+        void draw_search_space(const Policy<State, Action>* policy = nullptr)
         {
             throw std::runtime_error("Not implemented");
         }
-        void draw_search_space(const Policy<downward::State, downward::OperatorID>& policy);
+        void draw_search_space(const Policy<downward::State, downward::OperatorID>* policy = nullptr);
 
     };
 }

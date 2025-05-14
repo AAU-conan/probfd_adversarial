@@ -51,7 +51,7 @@ namespace probfd {
         return result;
     }
 
-    void SearchSpaceDrawer::draw_search_space(const Policy<downward::State, downward::OperatorID>& policy) {
+    void SearchSpaceDrawer::draw_search_space(const Policy<downward::State, downward::OperatorID>* policy) {
         graphviz::Graph graph;
 
         std::unordered_map<int, size_t> state_id_to_node;
@@ -61,12 +61,12 @@ namespace probfd {
             state.unpack();
             std::string label = state_name(state.get_unpacked_values());
 
-            auto decision = policy.get_decision(state);
+            auto decision = policy? policy->get_decision(state): std::nullopt;
             if (decision.has_value()) {
                 state_id_to_policy_op.insert({id, decision.value().action});
             }
 
-            std::string node_attrs = 0 == id? "shape=cds": "shape=box";
+            std::string node_attrs = 0 == id? "shape=cds,bgcolor=blue": "shape=box";
             bool is_goal = true;
             for (auto goal : task_proxy.get_goals()) {
                 downward::FactPair fp = goal.get_pair();
@@ -78,7 +78,7 @@ namespace probfd {
 
             if (q_values.contains(id)) {
                 auto q_value = q_values[id];
-                state_id_to_node[id] = graph.add_node(label, std::format("xlabel=\"q={}\"", q_value == INFINITE_VALUE ? "∞": std::format("{}", q_value)));
+                state_id_to_node[id] = graph.add_node(label, std::format("xlabel=\"q={}\",{}", q_value == INFINITE_VALUE ? "∞": std::format("{}", q_value), node_attrs));
             } else {
                 state_id_to_node[id] = graph.add_node(label,  node_attrs);
             }
