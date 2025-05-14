@@ -45,6 +45,7 @@ LandmarkCutHeuristic::LandmarkCutHeuristic(
           cache_estimates,
           description,
           verbosity)
+    , landmark_generator(std::make_unique<LandmarkCutLandmarks>(task_proxy))
 {
 }
 

@@ -91,6 +91,12 @@ static int search(argparse::ArgumentParser& parser)
 
     shared_ptr<TaskSolverFactory> solver_factory;
 
+    std::shared_ptr<ProbabilisticTask> input_task = run_time_logged(
+        std::cout,
+        "Reading input task...",
+        probfd::tasks::read_root_tasks_from_file,
+        parser.get("sas_file"));
+
     try {
         TokenStream tokens = split_tokens(search_arg);
         ASTNodePtr parsed = parse(tokens);
@@ -142,11 +148,6 @@ static int search(argparse::ArgumentParser& parser)
         return static_cast<int>(ExitCode::SEARCH_CRITICAL_ERROR);
     }
 
-    std::shared_ptr<ProbabilisticTask> input_task = run_time_logged(
-        std::cout,
-        "Reading input task...",
-        probfd::tasks::read_root_tasks_from_file,
-        parser.get("sas_file"));
 
     std::unique_ptr<SolverInterface> solver =
         solver_factory->create(input_task);
