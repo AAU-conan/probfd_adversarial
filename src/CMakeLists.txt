@@ -46,12 +46,21 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/t-kloessner/argparse.git
     GIT_TAG 1d16edc68e902fcd70fba4c12a1d48c7bcc7a8e2
 )
-
 FetchContent_MakeAvailable(argparse)
+
+FetchContent_Declare(
+        NamedType
+        GIT_REPOSITORY https://github.com/joboccara/NamedType.git
+        GIT_TAG        master
+        SOURCE_SUBDIR .fake
+)
+FetchContent_MakeAvailable(NamedType)
 
 #add_executable(probfd downward/command_line.cc downward/planner.cc)
 add_executable(probfd planner.cc search.cc list_features.cc)
 target_link_libraries(probfd PUBLIC argparse)
+
+include_directories(${namedtype_SOURCE_DIR}/include)
 
 # On Windows we have to copy all DLLs next to the generated binary.
 if (WIN32)

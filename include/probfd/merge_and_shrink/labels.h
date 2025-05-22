@@ -79,6 +79,10 @@ public:
 
     void dump_labels(downward::utils::LogProxy log) const;
 
+    bool is_active(int label) const {
+        return label_infos[label].cost != -1;
+    }
+
     friend std::unique_ptr<json::JsonObject> to_json(const Labels& labels);
 };
 

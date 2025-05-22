@@ -135,6 +135,7 @@ create_library(
         parser
         plugins
         search_space_draw
+        dominance
     TARGET
         probfd
 )

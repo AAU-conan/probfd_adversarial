@@ -415,3 +415,24 @@ create_library(
     DEPENDS
         graphviz
 )
+
+create_library(
+        NAME dominance
+        HELP "Dominance"
+        SOURCES
+            probfd/dominance/label_relation
+            probfd/dominance/dense_factor_relation
+            probfd/dominance/dense_label_relation
+            probfd/dominance/dominance_analysis
+            probfd/dominance/labelled_transition_system
+            probfd/dominance/fts_task
+            probfd/dominance/factor_dominance_relation
+            probfd/dominance/fact_names
+            probfd/dominance/label_map
+            probfd/dominance/label_outcome_map
+            probfd/dominance/strong_types
+            probfd/dominance/ld_simulation
+            probfd/dominance/state_dominance_relation
+        DEPENDS
+            pa_merge_and_shrink
+)
