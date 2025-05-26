@@ -84,19 +84,20 @@ namespace probfd::dominance {
     }
 }
 
-    LabelledTransitionSystem::LabelledTransitionSystem(const std::vector<std::tuple<State, Label, std::vector<State>>>& _transitions, const std::vector<State>& goals, State _init_state)
+    LabelledTransitionSystem::LabelledTransitionSystem(const std::vector<std::tuple<State, Label, std::vector<State>>> _transitions, const std::vector<State> goals, State _init_state, std::shared_ptr<FactValueNames> fvn)
+        : fact_value_names(fvn)
     {
         num_states = _init_state;
         num_labels = 0;
         for (const auto& [src, label, tgts] : _transitions) {
-            num_labels = std::max(num_labels, static_cast<size_t>(label));
-            num_states = std::max(num_states, static_cast<size_t>(src));
+            num_labels = std::max(num_labels, static_cast<size_t>(label) + 1);
+            num_states = std::max(num_states, static_cast<size_t>(src) + 1);
             for (const auto& t : tgts) {
-                num_states  = std::max(num_states, static_cast<size_t>(t));
+                num_states  = std::max(num_states, static_cast<size_t>(t) + 1);
             }
         }
         for (const State& s : goals) {
-            num_states = std::max(num_states, static_cast<size_t>(s));
+            num_states = std::max(num_states, static_cast<size_t>(s) + 1);
         }
 
         goal_states.resize(num_states, false);
@@ -109,15 +110,14 @@ namespace probfd::dominance {
         LabelGroup next_label_group(0);
         for (const auto& [src, label, tgts] : _transitions) {
             if (label_group_of_label[label].group == -1) {
+                label_groups.push_back({label});
                 label_group_of_label[label] = next_label_group;
                 ++next_label_group;
             }
             LabelGroup lg = label_group_of_label[label];
-            transitions_src[src].emplace_back(src, tgts, next_label_group);
-            transitions.emplace_back(src, tgts, next_label_group);
+            transitions_src[src].emplace_back(src, tgts, lg);
+            transitions.emplace_back(src, tgts, lg);
             transitions_label_group[lg.group].emplace_back(src, tgts);
-
-            ++next_label_group;
         }
 
 

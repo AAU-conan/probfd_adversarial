@@ -116,7 +116,7 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_bellman_and_greedy(
         transition_tails.clear();
         qvalues.clear();
 #ifndef NDEBUG
-        this->search_space_drawer->set_q_value(source_state, termination_cost);
+        if (this->search_space_drawer) this->search_space_drawer->set_q_value(source_state, termination_cost);
 #endif
         return AlgorithmValueType(termination_cost);
     }
@@ -124,7 +124,7 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_bellman_and_greedy(
     filter_greedy_transitions(transition_tails, qvalues, best_value);
 
 #ifndef NDEBUG
-    this->search_space_drawer->set_q_value(source_state, best_value);
+    if (this->search_space_drawer) this->search_space_drawer->set_q_value(source_state, best_value);
 #endif
     return best_value;
 }
@@ -235,7 +235,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
             initialize(mdp, h, mdp.get_state(succ_id), succ_info);
         }
 #ifndef NDEBUG
-        search_space_drawer->add_successor(state, transition.action, successors);
+        if (this->search_space_drawer) search_space_drawer->add_successor(state, transition.action, successors);
 #endif
     }
 }
@@ -284,7 +284,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
         state_info.set_goal();
         state_info.value = AlgorithmValueType(t_cost);
 #ifndef NDEBUG
-        search_space_drawer->set_q_value(state, state_info.value);
+        if (this->search_space_drawer) search_space_drawer->set_q_value(state, state_info.value);
 #endif
         return;
     }
@@ -297,7 +297,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
         state_info.value = estimate;
     }
 #ifndef NDEBUG
-    search_space_drawer->set_q_value(state, state_info.value);
+    if (search_space_drawer) search_space_drawer->set_q_value(state, state_info.value);
 #endif
 
     if (estimate == t_cost) {
@@ -394,7 +394,9 @@ Interval HeuristicSearchAlgorithm<State, Action, StateInfoT>::solve(
     double max_time)
 {
 #ifndef NDEBUG
-    this->search_space_drawer = std::make_unique<SearchSpaceDrawer>("search_space.dot", *mdp.task_proxy);
+    if (mdp.task_proxy) {
+        this->search_space_drawer = std::make_unique<SearchSpaceDrawer>("search_space.dot", *mdp.task_proxy);
+    }
 #endif
     HSBase::initialize_initial_state(mdp, h, state);
     return this->do_solve(mdp, h, state, progress, max_time);

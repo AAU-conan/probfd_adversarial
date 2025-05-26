@@ -19,6 +19,7 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(googletest)
+include(GoogleTest)
 
 add_executable(probfd_tests test_main.cc)
 target_link_libraries(probfd_tests PRIVATE GTest::gtest)

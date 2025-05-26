@@ -163,7 +163,7 @@ namespace probfd::dominance {
         std::shared_ptr<FactValueNames> fact_value_names;
         LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, std::shared_ptr<FactValueNames> fact_value_names);
 
-        LabelledTransitionSystem(const std::vector<std::tuple<State, Label, std::vector<State>>>& _transitions, const std::vector<State>& goals, State _init_state);
+        LabelledTransitionSystem(const std::vector<std::tuple<State, Label, std::vector<State>>> _transitions, const std::vector<State> goals, State _init_state, std::shared_ptr<FactValueNames> fvn);
 
         ~LabelledTransitionSystem() {}
 

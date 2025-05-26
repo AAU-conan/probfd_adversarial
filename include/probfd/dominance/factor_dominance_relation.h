@@ -14,6 +14,7 @@ namespace probfd::dominance {
      * FactorDominanceRelation is abstract and represents the simulation relation between states in a single LTS.
      */
     class FactorDominanceRelation {
+    protected:
         size_t num_states;
     public:
         explicit FactorDominanceRelation(int num_states);

@@ -26,6 +26,19 @@ namespace probfd::dominance {
             return AllNoneFactorIndex (DOMINATES_IN_NONE);
         }
 
+        static AllNoneFactorIndex all_except(FactorIndex factor) {
+            assert(factor >= FactorIndex(0));
+            return AllNoneFactorIndex(factor);
+        }
+
+        [[nodiscard]] bool is_all_factors() const {
+            return not_present_factor == DOMINATES_IN_ALL;
+        }
+
+        [[nodiscard]] bool is_no_factors() const {
+            return not_present_factor == DOMINATES_IN_NONE;
+        }
+
         [[nodiscard]] bool is_none() const {
             return not_present_factor == DOMINATES_IN_NONE;
         }

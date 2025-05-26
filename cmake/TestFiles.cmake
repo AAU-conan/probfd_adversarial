@@ -86,3 +86,16 @@ create_library(
     TARGET
         probfd_tests
 )
+
+create_library(
+    NAME dominance_tests
+    HELP "Dominance Tests"
+    SOURCES
+        tests/dominance/factor_dominance_tests
+    DEPENDS
+        GTest::gtest
+        test_utils
+        dominance
+    TARGET
+        probfd_tests
+)

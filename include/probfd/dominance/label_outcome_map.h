@@ -9,6 +9,7 @@ namespace probfd::dominance {
      * This class is used to map labels to label-outcomes in a labelled transition system.
      */
     class LabelOutcomeMap {
+        size_t total_label_outcomes;
         std::vector<LabelOutcome> label_to_first_label_outcome;
         std::vector<size_t> label_to_num_outcomes;
     public:
@@ -23,6 +24,7 @@ namespace probfd::dominance {
                 label_to_num_outcomes[label] = fts_task.get_num_label_outcomes(label);
                 next_label_outcome = LabelOutcome(next_label_outcome + label_to_num_outcomes[label]);
             }
+            total_label_outcomes = next_label_outcome;
         }
 
         [[nodiscard]] LabelOutcome get_label_outcome(Label label, size_t outcome) const {
@@ -38,6 +40,10 @@ namespace probfd::dominance {
             return std::views::iota(0ul, label_to_num_outcomes[label]) | std::views::transform([this, label](size_t i) {
                 return get_label_outcome(label, i);
             });
+        }
+
+        [[nodiscard]] size_t get_total_num_label_outcomes() const {
+            return total_label_outcomes;
         }
     };
 }

@@ -113,6 +113,19 @@
       "output": {
         "outputOnFailure": true
       }
+    },
+    {
+      "name": "all_tests_debug",
+      "displayName": "Run all tests.",
+      "configurePreset": "tests",
+      "configuration": "Debug",
+      "execution": {
+        "jobs": 0,
+        "timeout": 10
+      },
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

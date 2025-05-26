@@ -32,6 +32,10 @@ namespace probfd::dominance {
     using LabelOutcome = fluent::NamedType<int, struct LabelOutcomeTag, BASE_FUNCTIONALITIES>;
     using State = fluent::NamedType<int, struct StateTag, BASE_FUNCTIONALITIES>;
     using FactorIndex = fluent::NamedType<int, struct FactorIndexTag, BASE_FUNCTIONALITIES>;
+
+
+    constexpr State operator"" _s(unsigned long long value) { return State(value); }
+    constexpr Label operator"" _l(unsigned long long value) { return Label(value); }
 }
 
 #endif //DOMINANCE_STRONG_TYPES_H

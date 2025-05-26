@@ -40,7 +40,15 @@ namespace probfd::dominance {
 
 
     public:
-        explicit FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts, const std::optional<std::shared_ptr<ProbabilisticTask>>& parent = std::nullopt);
+        explicit FTSTask(
+            const merge_and_shrink::FactoredTransitionSystem& fts,
+            const std::optional<std::shared_ptr<ProbabilisticTask>>& parent =
+                std::nullopt);
+        FTSTask(
+            const std::vector<LabelledTransitionSystem>& ltss,
+            std::vector<int> label_costs,
+            std::vector<int> label_outcomes,
+            const std::optional<std::shared_ptr<ProbabilisticTask>>& parent);
 
 
         int get_num_labels() const;

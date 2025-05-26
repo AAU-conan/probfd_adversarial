@@ -55,6 +55,8 @@ create_library(
         utils
         probabilistic_successor_generator
         mas_heuristic
+        dominance
+        search_space_draw
 )
 
 create_library(
@@ -112,6 +114,7 @@ create_library(
         probfd/transition_sorters/vdiff_sorter
     DEPENDS
         probfd_core
+        search_space_draw
 )
 
 create_library(
@@ -435,6 +438,6 @@ create_library(
             probfd/dominance/ld_simulation
             probfd/dominance/state_dominance_relation
             probfd/dominance/draw_fts
-        DEPENDS
-            pa_merge_and_shrink
+            probfd/dominance/manual_label_outcome_relation
+            probfd/dominance/manual_factor_dominance_relation
 )

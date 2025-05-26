@@ -10,23 +10,52 @@
 
 namespace probfd::dominance {
 
-    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts, const std::optional<std::shared_ptr<ProbabilisticTask>>& parent)
-    : fact_names(parent.has_value()? static_cast<std::shared_ptr<FactNames>>(std::make_shared<ProbabilisticTaskFactNames>(parent.value())): std::make_shared<NoFactNames>()) {
+    FTSTask::FTSTask(
+    const merge_and_shrink::FactoredTransitionSystem& fts,
+    const std::optional<std::shared_ptr<ProbabilisticTask>>& parent)
+    : fact_names(
+          parent.has_value() ? static_cast<std::shared_ptr<FactNames>>(
+                                   std::make_shared<ProbabilisticTaskFactNames>(
+                                       parent.value()))
+                             : std::make_shared<NoFactNames>())
+{
 
-        LabelMap label_map (fts.get_labels());
-        for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, get_debug_or_release_fact_value_names(fact_names, ts)));
-        }
-
-        label_costs.resize(label_map.get_num_labels());
-        label_outcomes.resize(label_map.get_num_labels());
-        for (int i = 0; i < label_costs.size(); ++i) {
-            label_costs[i] = fts.get_labels().get_label_cost(label_map.get_old_id(i));
-            label_outcomes[i] = fts.get_labels().get_label_probabilities(label_map.get_old_id(i)).size();
-        }
+    LabelMap label_map(fts.get_labels());
+    for (const auto& ts : fts) {
+        transition_systems.push_back(
+            std::make_unique<LabelledTransitionSystem>(
+                fts.get_transition_system(ts),
+                label_map,
+                get_debug_or_release_fact_value_names(fact_names, ts)));
     }
 
-    int FTSTask::get_num_labels() const
+    label_costs.resize(label_map.get_num_labels());
+    label_outcomes.resize(label_map.get_num_labels());
+    for (int i = 0; i < label_costs.size(); ++i) {
+        label_costs[i] =
+            fts.get_labels().get_label_cost(label_map.get_old_id(i));
+        label_outcomes[i] =
+            fts.get_labels()
+                .get_label_probabilities(label_map.get_old_id(i))
+                .size();
+    }
+}
+
+FTSTask::FTSTask(
+    const std::vector<LabelledTransitionSystem>& ltss, std::vector<int> label_costs, std::vector<int> label_outcomes,
+    const std::optional<std::shared_ptr<ProbabilisticTask>>& parent)
+    : transition_systems(), label_costs(std::move(label_costs)), label_outcomes(std::move(label_outcomes)), fact_names(
+          parent.has_value() ? static_cast<std::shared_ptr<FactNames>>(
+                                   std::make_shared<ProbabilisticTaskFactNames>(
+                                       parent.value()))
+                             : std::make_shared<NoFactNames>())
+{
+        for (const auto& lts : ltss) {
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(lts));
+        }
+}
+
+int FTSTask::get_num_labels() const
     {
         return label_costs.size();
     }
