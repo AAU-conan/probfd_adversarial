@@ -144,7 +144,7 @@ namespace probfd::dominance {
         size_t num_states;
         size_t num_labels;
         std::vector<bool> goal_states;
-        State init_state;
+        State init_state{};
         std::vector<LabelGroup> relevant_label_groups;
         std::vector<bool> label_group_is_relevant;
         std::vector<int> goal_distances; // TODO: Possibly unify with merge_and_shrink::Distances
@@ -162,6 +162,8 @@ namespace probfd::dominance {
     public:
         std::shared_ptr<FactValueNames> fact_value_names;
         LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, std::shared_ptr<FactValueNames> fact_value_names);
+
+        LabelledTransitionSystem(const std::vector<std::tuple<State, Label, std::vector<State>>>& _transitions, const std::vector<State>& goals, State _init_state);
 
         ~LabelledTransitionSystem() {}
 
@@ -203,6 +205,8 @@ namespace probfd::dominance {
 
         [[nodiscard]] std::string state_name(State s) const;
 
+        [[nodiscard]] std::string state_names(std::vector<State> states) const;
+
         [[nodiscard]] std::string label_name(Label label) const;
 
         [[nodiscard]] std::string label_group_name(const LabelGroup& lg) const;
@@ -224,7 +228,7 @@ namespace probfd::dominance {
         }
 
         //For each transition labelled with l, applya a function. If returns true, applies a break
-        bool applyPostSrc(int from,
+        bool applyPostSrc(State from,
                           std::function<bool(const LTSTransition &tr)> &&f) const {
             for (const auto &tr: transitions_src[from]) {
                 if (f(tr)) return true;

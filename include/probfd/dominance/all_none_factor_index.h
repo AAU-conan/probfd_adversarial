@@ -66,11 +66,16 @@ namespace probfd::dominance {
             return not_present_factor == other.not_present_factor;
         }
 
+        std::string to_string() const {
+            if (is_all())
+                return "all";
+            if (is_none())
+                return "none";
+            return std::format("all_except_{}", get_not_present_factor().get());
+        }
     };
-
 }
 
-std::string to_string(probfd::dominance::AllNoneFactorIndex a);
 
 
 #endif

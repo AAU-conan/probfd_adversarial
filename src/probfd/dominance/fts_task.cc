@@ -10,8 +10,8 @@
 
 namespace probfd::dominance {
 
-    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts, const std::optional<std::shared_ptr<downward::AbstractTask>>& parent)
-    : fact_names(parent.has_value()? static_cast<std::shared_ptr<FactNames>>(std::make_shared<AbstractTaskFactNames>(parent.value())): std::make_shared<NoFactNames>()) {
+    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts, const std::optional<std::shared_ptr<ProbabilisticTask>>& parent)
+    : fact_names(parent.has_value()? static_cast<std::shared_ptr<FactNames>>(std::make_shared<ProbabilisticTaskFactNames>(parent.value())): std::make_shared<NoFactNames>()) {
 
         LabelMap label_map (fts.get_labels());
         for (const auto & ts : fts) {
@@ -97,4 +97,63 @@ namespace probfd::dominance {
         return transition_systems;
     }
 
+    std::string FTSTask::get_axiom_name(int) const {
+        ABORT("Accessing axiom_name of an FTSTask");
+    }
+
+    int FTSTask::get_num_axiom_preconditions(int) const {
+        ABORT("Accessing num_axiom_preconditions of an FTSTask");
+    }
+
+    FactPair FTSTask::get_axiom_precondition(int, int) const {
+        ABORT("Accessing axiom_precondition of an FTSTask");
+    }
+
+    int FTSTask::get_num_axiom_effects(int) const {
+        ABORT("Accessing num_axiom_effects of an FTSTask");
+    }
+
+    int FTSTask::get_num_axiom_effect_conditions(int, int) const {
+        ABORT("Accessing num_axiom_effect_conditions of an FTSTask");
+    }
+
+    FactPair FTSTask::get_axiom_effect_condition(int, int, int) const {
+        ABORT("Accessing axiom_effect_condition of an FTSTask");
+    }
+
+    FactPair FTSTask::get_axiom_effect(int, int) const {
+        ABORT("Accessing axiom_effect of an FTSTask");
+    }
+
+    std::string FTSTask::get_operator_name(int) const {
+        ABORT("Accessing operator_name of an FTSTask");
+    }
+
+    int FTSTask::get_num_operator_preconditions(int) const {
+        ABORT("Accessing num_operator_preconditions of an FTSTask");
+    }
+
+    FactPair FTSTask::get_operator_precondition(int, int) const {
+        ABORT("Accessing operator_precondition of an FTSTask");
+    }
+
+    int FTSTask::get_operator_cost(int) const {
+        ABORT("Accessing operator_cost of an FTSTask");
+    }
+
+    int FTSTask::get_num_operator_effects(int) const {
+        ABORT("Accessing num_operator_effects of an FTSTask");
+    }
+
+    int FTSTask::get_num_operator_effect_conditions(int, int) const {
+        ABORT("Accessing num_operator_effect_conditions of an FTSTask");
+    }
+
+    FactPair FTSTask::get_operator_effect_condition(int, int, int) const {
+        ABORT("Accessing operator_effect_condition of an FTSTask");
+    }
+
+    FactPair FTSTask::get_operator_effect(int, int) const {
+        ABORT("Accessing operator_effect of an FTSTask");
+    }
 }

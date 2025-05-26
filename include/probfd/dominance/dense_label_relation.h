@@ -3,11 +3,11 @@
 
 #include "probfd/dominance/label_relation.h"
 #include "probfd/dominance/strong_types.h"
+#include "probfd/dominance/all_none_factor_index.h"
 
 #include <vector>
 
 namespace probfd::dominance {
-    class AllNoneFactorIndex;
     class LabelOutcomeMap;
 
     /*
@@ -51,6 +51,8 @@ namespace probfd::dominance {
             const LabelOutcomeMap& label_outcome_map);
 
         inline size_t get_num_labels() const;
+
+        void dump(std::ostream& os, const FTSTask& fts_task, const LabelOutcomeMap& label_outcome_map) const override;
     };
 }
 

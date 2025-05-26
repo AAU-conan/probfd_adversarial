@@ -25,7 +25,7 @@ namespace fluent {
 }
 
 #define BASE_FUNCTIONALITIES \
-    fluent::Comparable, fluent::PrePostIncrementable, fluent::Printable, fluent::ImplicitlyConvertibleTo<size_t>::templ
+    fluent::Comparable, fluent::PrePostIncrementable, fluent::Printable, fluent::ImplicitlyConvertibleTo<size_t>::templ, fluent::Hashable
 
 namespace probfd::dominance {
     using Label = fluent::NamedType<int, struct LabelTag, BASE_FUNCTIONALITIES>;

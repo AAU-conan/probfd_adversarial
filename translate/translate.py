@@ -527,8 +527,7 @@ def trivial_task(solvable):
     operators = []
     axioms = []
     metric = True
-    return sas_tasks.SASTask(variables, mutexes, init, goal, operators, axioms,
-                             metric)
+    return sas_tasks.SASTask(variables, mutexes, init, goal, None, operators, axioms, metric, False)
 
 
 def solvable_sas_task(msg):

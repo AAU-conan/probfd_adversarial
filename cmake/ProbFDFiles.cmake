@@ -420,6 +420,7 @@ create_library(
         NAME dominance
         HELP "Dominance"
         SOURCES
+            probfd/dominance/all_factor_none_index
             probfd/dominance/label_relation
             probfd/dominance/dense_factor_relation
             probfd/dominance/dense_label_relation
@@ -433,6 +434,7 @@ create_library(
             probfd/dominance/strong_types
             probfd/dominance/ld_simulation
             probfd/dominance/state_dominance_relation
+            probfd/dominance/draw_fts
         DEPENDS
             pa_merge_and_shrink
 )

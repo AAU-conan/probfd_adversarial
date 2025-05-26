@@ -18,6 +18,17 @@
 #include "downward/utils/timer.h"
 
 #include "downward/utils/exceptions.h"
+#include "probfd/dominance/dense_factor_relation.h"
+#include "probfd/dominance/dense_label_relation.h"
+#include "probfd/dominance/dominance_analysis.h"
+#include "probfd/dominance/draw_fts.h"
+#include "probfd/dominance/factor_dominance_relation.h"
+#include "probfd/dominance/fts_task.h"
+#include "probfd/dominance/label_relation.h"
+#include "probfd/dominance/ld_simulation.h"
+#include "probfd/dominance/state_dominance_relation.h"
+#include "probfd/merge_and_shrink/factored_transition_system.h"
+#include "probfd/merge_and_shrink/fts_factory.h"
 
 #include <deque>
 #include <fstream>
@@ -158,6 +169,26 @@ public:
                 *task_cost_function};
 
             mdp.task_proxy = std::make_shared<ProbabilisticTaskProxy>(*task);
+
+            // Create dominance analysis object
+            std::shared_ptr<dominance::DominanceAnalysis> dominance_analysis = std::make_shared<dominance::LDSimulation>(
+                std::make_shared<dominance::FactorDominanceRelationFactoryImpl<dominance::DenseFactorRelation>>(),
+                std::make_shared<dominance::LabelRelationFactoryImpl<dominance::DenseLabelOutcomeRelation>>()
+            );
+
+            // Construct atomic transition systems
+            merge_and_shrink::FactoredTransitionSystem fts = merge_and_shrink::create_factored_transition_system(*mdp.task_proxy, g_log);
+
+            // Construct FTS task
+            dominance::FTSTask fts_task(fts, task);
+
+#ifndef NDEBUG
+            dominance::draw_fts("fts.dot", fts_task);
+#endif
+
+            // Do dominance analysis
+            std::unique_ptr<dominance::StateDominanceRelation> state_dominance_relation = dominance_analysis->compute_dominance_relation(fts_task);
+
 
             std::unique_ptr<Policy<State, OperatorID>> policy =
                 algorithm->compute_policy(

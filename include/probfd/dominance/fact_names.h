@@ -3,9 +3,13 @@
 
 #include "probfd/dominance/strong_types.h"
 
+#include <boost/bimap.hpp>
 #include <memory>
 #include <string>
-#include <boost/bimap.hpp>
+
+namespace probfd {
+class ProbabilisticTask;
+}
 
 namespace downward {
     class AbstractTask;
@@ -67,6 +71,26 @@ public:
         [[nodiscard]] int get_num_operators() const override;
 
         [[nodiscard]] size_t get_num_variables() const override;
+    };
+
+    class ProbabilisticTaskFactNames final : public FactNames {
+        std::shared_ptr<probfd::ProbabilisticTask> probabilistic_task;
+    public:
+
+        explicit ProbabilisticTaskFactNames(const std::shared_ptr<ProbabilisticTask>& probabilistic_task);
+
+        [[nodiscard]]
+        std::string get_operator_name(int index) const override;
+        [[nodiscard]]
+        std::string get_variable_name(int var) const override;
+        [[nodiscard]]
+        std::string get_fact_name(const FactPair& fact_pair) const override;
+        [[nodiscard]]
+        std::unique_ptr<FactNames> clone() const override;
+        [[nodiscard]]
+        int get_num_operators() const override;
+        [[nodiscard]]
+        size_t get_num_variables() const override;
     };
 
     class FactValueNames {

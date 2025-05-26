@@ -7,7 +7,9 @@
 #include "probfd/dominance/factor_dominance_relation.h"
 #include "downward/task_proxy.h"
 
-class State;
+namespace downward {
+    class State;
+}
 
 namespace utils {
     class LogProxy;

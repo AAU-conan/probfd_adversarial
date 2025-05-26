@@ -2,10 +2,12 @@
 
 #include "downward/cli/plugins/plugin.h"
 #include "probfd/dominance/all_none_factor_index.h"
+#include "probfd/dominance/fact_names.h"
 #include "probfd/dominance/factor_dominance_relation.h"
 #include "probfd/dominance/fts_task.h"
 
 #include <cassert>
+#include <print>
 
 namespace probfd::dominance {
     bool DenseLabelOutcomeRelation::simulates(LabelOutcome lo1, LabelOutcome lo2, FactorIndex factor) const {
@@ -21,39 +23,84 @@ namespace probfd::dominance {
         assert(lo >= 0);
         assert((size_t)lo < dominated_by_noop_in.size());
 
-        return dominated_by_noop_in[lo.get()].contains(factor);
+        return dominated_by_noop_in[lo].contains(factor);
     }
 
     void DenseLabelOutcomeRelation::set_not_simulates(LabelOutcome lo1, LabelOutcome lo2, FactorIndex factor) {
         //std::cout << "Not simulates: " << l1 << " to " << l2 << " in " << factor << std::endl;
-        dominates_in[lo1.get()][lo2.get()].remove(factor);
+        dominates_in[lo1][lo2].remove(factor);
     }
 
     bool DenseLabelOutcomeRelation::set_not_simulated_by_irrelevant(LabelOutcome lo, FactorIndex factor) {
         //std::cout << "Not simulated by irrelevant: " << l << " in " << factor << std::endl;
 
         //Returns if there were changes in dominated_by_noop_in
-        simulated_by_irrelevant[lo.get()][factor.get()] = false;
-        return dominated_by_noop_in[lo.get()].remove(factor);
+        simulated_by_irrelevant[lo][factor] = false;
+        return dominated_by_noop_in[lo].remove(factor);
     }
 
-    size_t DenseLabelOutcomeRelation::get_num_labels() const {
+    size_t DenseLabelOutcomeRelation::get_num_labels() const
+    {
         return num_label_outcomes;
     }
 
+    void DenseLabelOutcomeRelation::dump(
+        std::ostream& os,
+        const FTSTask& fts_task,
+        const LabelOutcomeMap& label_outcome_map) const
+    {
+        auto fvn = fts_task.get_factor(FactorIndex(0)).fact_value_names;
+        for (Label l2(0); l2 < fts_task.get_num_labels(); ++l2) {
+            for (auto [o2, lo2] : std::views::enumerate(label_outcome_map.get_label_outcomes(l2))) {
+                for (Label l1(0); l1 < fts_task.get_num_labels(); ++l1) {
+                    if (l1 == l2) {
+                        continue;
+                    }
+                    for (auto [o1, lo1] : std::views::enumerate(label_outcome_map.get_label_outcomes(l1))) {
+                        if (!dominates_in[lo2][lo1].is_none()) {
+                            os << std::format("({},{}) dominates ({},{}) in {}",
+                                              fvn->get_operator_name(l2),
+                                              o2,
+                                              fvn->get_operator_name(l1),
+                                              o1,
+                                              dominates_in[lo2][lo1].to_string()
+                            ) << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+        for (Label l1(0); l1 < fts_task.get_num_labels(); ++l1) {
+            for (auto [o1, lo1] : std::views::enumerate(label_outcome_map.get_label_outcomes(l1))) {
+                if (!dominated_by_noop_in[lo1].is_none()) {
+                    os << std::format("noop dominates ({},{}) in {}",
+                                      fvn->get_operator_name(l1),
+                                      o1,
+                                      dominated_by_noop_in[lo1].to_string()
+                    ) << std::endl;
+                }
+            }
+        }
+    }
+
     bool DenseLabelOutcomeRelation::label_dominates_label_in_all_other(FactorIndex factor, const FTSTask& /*fts_task*/, LabelOutcome lo1, LabelOutcome lo2) const {
-        return dominates_in[lo1.get()][lo2.get()].contains_all_except(factor);
+        return dominates_in[lo1][lo2].contains_all_except(factor);
     }
 
     bool DenseLabelOutcomeRelation::noop_dominates_label_in_all_other(FactorIndex factor, const FTSTask& /*fts_task*/, LabelOutcome lo) const {
-        return dominated_by_noop_in[lo.get()].contains_all_except(factor);
+        return dominated_by_noop_in[lo].contains_all_except(factor);
     }
 
     bool DenseLabelOutcomeRelation::update_factor(FactorIndex factor, const FTSTask& fts_task, const FactorDominanceRelation& sim, const LabelOutcomeMap& label_outcome_map) {
         bool changes = false;
         const LabelledTransitionSystem& lts = fts_task.get_factor(factor);
-        for (LabelGroup lg_2: lts.get_relevant_label_groups()) {
-            for (Label l2 : lts.get_labels(lg_2)) {
+        // A label-outcome (l',o') dominates (l,o) in factor Θ_i if ∀s-(l,o)->s'.∃s-(l',o')->s''. s' <= s''
+        // A label has a set of outcomes O(l), and whenever s-l->, then for all o ∈ O(l) there is s-(l,o)->s'
+        // <= is <sim> and is a factor-dominance relation for the factor Θ_i
+        // i is <factor>
+        // O is represented by <label_outcome_map>
+        for (LabelGroup lg2: lts.get_relevant_label_groups()) {
+            for (Label l2 : lts.get_labels(lg2)) {
                 for (auto [o2, lo2] : std::views::enumerate(label_outcome_map.get_label_outcomes(l2))) {
                     // Check if other label outcomes lo1 simulate lo2
                     for (LabelGroup lg_1: lts.get_relevant_label_groups()) {
@@ -75,7 +122,7 @@ namespace probfd::dominance {
                                             }
                                         }
                                         if (!found) {
-                                            //std::log << "Not sim " << l1 << " " << l2 << " " << i << std::endl;
+                                            std::println("Not ({},{}) dominates ({},{}) in factor {}", lts.label_name(l1), o1, lts.label_name(l2), o2, factor.get());
                                             set_not_simulates(lo1, lo2, factor);
                                             changes = true;
                                             break; //Stop checking trs of l2
@@ -86,10 +133,14 @@ namespace probfd::dominance {
                         }
                     }
 
-                    //Is lo2 simulated by irrelevant_labels in factor?
+                    // A label l is irrelevant iff for all s and for all o ∈ O(l) we have s -(l,o)-> s
+
+                    // Does irrelevant label dominate (l,o) in factor?
+                    // ∀ s-(l,o)->s'. s' <= s
                     if (simulated_by_irrelevant.at(lo2).at(factor)) {
                         for (auto tr: lts.get_transitions_label(l2)) {
                             if (!sim.simulates(tr.src, tr.targets.at(o2))) {
+                                // It does not
                                 changes |= set_not_simulated_by_irrelevant(lo2, factor);
                                 for (Label l: lts.get_irrelevant_labels()) {
                                     for (LabelOutcome lo : label_outcome_map.get_label_outcomes(l)) {
@@ -105,7 +156,8 @@ namespace probfd::dominance {
                         }
                     }
 
-                    //Does lo2 simulate irrelevant_labels in factor?
+                    //Does (l,o) dominate irrelevant label in factor?
+                    // ∀ s. ∃s-(l,o)->s'. s <= s'
                     if (simulates_irrelevant.at(lo2).at(factor)) {
                         for (State s(0); s < lts.size(); ++s) {
                             bool found = false;
@@ -155,7 +207,7 @@ namespace probfd::dominance {
         dominated_by_noop_in.resize(num_label_outcomes, AllNoneFactorIndex::all_factors());
         for (Label l1(0); l1 < fts_task.get_num_labels(); ++l1) {
             for (LabelOutcome lo1 : label_outcome_map.get_label_outcomes(l1)) {
-                dominates_in[lo1.get()].resize(num_label_outcomes, AllNoneFactorIndex::all_factors());
+                dominates_in[lo1].resize(num_label_outcomes, AllNoneFactorIndex::all_factors());
                 for (Label l2(0); l2 < fts_task.get_num_labels(); ++l2) {
                     for (LabelOutcome lo2 : label_outcome_map.get_label_outcomes(l2)) {
                         if (fts_task.get_label_cost(l1) > fts_task.get_label_cost(l2)) {

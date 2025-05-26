@@ -11,6 +11,8 @@
 #include "downward/utils/timer.h"
 #include "probfd/dominance/label_outcome_map.h"
 
+#include <print>
+
 using std::vector;
 
 namespace probfd::dominance {
@@ -70,44 +72,58 @@ namespace probfd::dominance {
 
     bool update_local_relation(FactorIndex factor, const FTSTask& fts_task, const LabelOutcomeRelation& label_dominance,
                                FactorDominanceRelation& local_relation, const LabelOutcomeMap& label_outcome_map) {
+        std::println("Updating local relation for factor {}", factor.get());
         bool changes = true;
         bool any_changes = false;
         const LabelledTransitionSystem& lts = fts_task.get_factor(factor);
         while (changes) {
             changes = local_relation.remove_simulations_if([&](State t, State s) {
                 //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
+                std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
                 //Check if really t simulates s
                 //for each transition s-l->:
-                // a) for all outcomes s-l-o-> s'. t >= s' and l dominated by noop?
+                // a) for all s-(l,o)-> s'. s' <= t and l dominated by noop?
                 // b) exist t-l'->. for all t-l'-o'-> t'. exists s-l-o-> s'. t' >= s' and (l,o) dominated by (l',o')?
                 return lts.applyPostSrc(s, [&](const LTSTransition &trs) {
-                    //log << "Checking transition " << s << " to " << trs.target << std::endl;
+                    // Checking all transitions of s, if this returns true, we remove the simulation!
+
+                    std::println("  Checking s-transition {}-{}->{}", lts.state_name(s), lts.label_group_name(trs.label_group), lts.state_names(trs.targets));
 
                     const std::vector<Label> &labels_trs = lts.get_labels(trs.label_group);
-                 //   assert(!labels_trs.empty());
+                    assert(!labels_trs.empty());
+
                     for (Label label_trs : labels_trs) {
-                        //log << "Checking label " << labels_trs[i] << " to " << trs.target << std::endl;
-                        bool found = true;
+                        std::println("    Checking s-label {}", lts.label_name(label_trs));
+                        bool found = false;
                         for (auto [o, lo] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trs))) {
-                            if (!local_relation.simulates(trs.src, trs.targets.at(o)) && label_dominance.noop_dominates_label_in_all_other(factor, fts_task, lo)) {
-                                found = false;
+                            if (local_relation.simulates(t, trs.targets.at(o)) && label_dominance.noop_dominates_label_in_all_other(factor, fts_task, lo)) {
+                                std::println("      outcome {} simulated by noop", o);
+                                found = true;
                                 break;
                             }
                         }
                         if (!found) {
+                            std::println("      No outcome simulated by noop");
                             found = lts.applyPostSrc(t, [&](const LTSTransition &trt) {
+                                // Checking all transitions of t, we just need to find one. If it returns true, we have found one.
+                                std::println("      Response {}-{}->",lts.state_name(t), lts.label_group_name(trt.label_group));
                                 const std::vector<Label> &labels_trt = lts.get_labels(trt.label_group);
                                 for (Label label_trt: labels_trt) {
+                                    std::println("        Checking label {}", lts.label_name(label_trt));
                                     for (auto [o2, lo2] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trt))) {
+                                        std::println("          Does t-outcome {} simulate s-outome ", o2);
                                         for (auto [o, lo] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trs))) {
                                             if (!local_relation.simulates(trt.targets.at(o2), trs.targets.at(o)) && label_dominance.label_dominates_label_in_all_other(factor, fts_task, lo2, lo)) {
+                                                std::println("            {}. Yes", o);
                                                 goto o2_good;
                                             }
+                                            std::println("            {}. No", o);
                                         }
                                         // No o s.t. o2 dominates o, label_trt doesn't work
                                         goto label_trt_bad;
                                         o2_good:;
                                     }
+                                    std::println("      Works");
                                     // label_trt is good
                                     return true;
                                     label_trt_bad:;
@@ -117,15 +133,20 @@ namespace probfd::dominance {
                         }
 
                         if (!found) {
+                            std::println("    No response for label");
+                            std::println("Removing simulation");
                             return true;
+                        } else {
+                            std::println("    Response found");
                         }
                     }
-
+                    std::println("  Transition is simulated");
                     return false;
                 });
             });
             any_changes |= changes;
         }
+        local_relation.dump(lts);
         return any_changes;
     }
 
@@ -134,6 +155,7 @@ namespace probfd::dominance {
         for (FactorIndex factor(0); factor < task.get_num_variables(); ++factor) {
             changes |= label_relation.update_factor(factor, task, *(sim[factor]), label_outcome_map);
         }
+        label_relation.dump(std::cout, task, label_outcome_map);
         return changes;
     }
 

@@ -28,10 +28,16 @@ namespace probfd::dominance {
 
         [[nodiscard]] virtual bool noop_dominates_label_in_all_other(FactorIndex factor, const FTSTask& fts_task, LabelOutcome lo) const = 0;
 
-        virtual bool update_factor(FactorIndex factor, const FTSTask& fts_task, const FactorDominanceRelation& sim, const LabelOutcomeMap& label_outcome_map) = 0;
+        virtual bool update_factor(
+            FactorIndex factor,
+            const FTSTask& fts_task,
+            const FactorDominanceRelation& sim,
+            const LabelOutcomeMap& label_outcome_map) = 0;
 
-
-        void dump(const FTSTask& fts_task) const;
+        virtual void dump(
+            std::ostream& os,
+            const FTSTask& fts_task,
+            const LabelOutcomeMap& label_outcome_map) const;
     };
 
     class LabelRelationFactory {

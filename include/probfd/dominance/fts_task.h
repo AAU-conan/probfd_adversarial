@@ -7,6 +7,10 @@
 #include "downward/abstract_task.h"
 #include "labelled_transition_system.h"
 
+namespace probfd {
+class ProbabilisticTask;
+}
+
 namespace probfd::merge_and_shrink {
     class FactoredTransitionSystem;
 }
@@ -25,7 +29,7 @@ namespace probfd::dominance {
     // it allows for faster access to the transitions from/to certain states.
     // Preliminary experiments showed that this can pay off for the computation of dominance relations
 
-    class FTSTask : public downward::AbstractTask {
+    class FTSTask final : public downward::AbstractTask {
         // The abstract task that was used to generate this task. This is optional.
         // For now just used to preserve fact and action names, whenever they match
         std::shared_ptr<FactNames> fact_names;
@@ -36,7 +40,7 @@ namespace probfd::dominance {
 
 
     public:
-        explicit FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts, const std::optional<std::shared_ptr<AbstractTask>>& parent = std::nullopt);
+        explicit FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts, const std::optional<std::shared_ptr<ProbabilisticTask>>& parent = std::nullopt);
 
 
         int get_num_labels() const;
@@ -69,7 +73,32 @@ namespace probfd::dominance {
 
         std::vector<int> get_initial_state_values() const override;
 
-        const std::vector<std::unique_ptr<LabelledTransitionSystem>> &get_factors() const;
+        const std::vector<std::unique_ptr<LabelledTransitionSystem>>& get_factors() const;
+        std::string get_axiom_name(int index) const override;
+        int get_num_axiom_preconditions(int index) const override;
+        FactPair
+        get_axiom_precondition(int op_index, int fact_index) const override;
+        int get_num_axiom_effects(int op_index) const override;
+        int get_num_axiom_effect_conditions(int op_index, int eff_index)
+            const override;
+        FactPair
+        get_axiom_effect_condition(int op_index, int eff_index, int cond_index)
+            const override;
+        FactPair get_axiom_effect(int op_index, int eff_index) const override;
+        std::string get_operator_name(int index) const override;
+        int get_num_operator_preconditions(int index) const override;
+        FactPair
+        get_operator_precondition(int op_index, int fact_index) const override;
+        int get_operator_cost(int index) const override;
+        int get_num_operator_effects(int op_index) const override;
+        int get_num_operator_effect_conditions(int op_index, int eff_index)
+            const override;
+        FactPair get_operator_effect_condition(
+            int op_index,
+            int eff_index,
+            int cond_index) const override;
+        FactPair
+        get_operator_effect(int op_index, int eff_index) const override;
     };
 
 }

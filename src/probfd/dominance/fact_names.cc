@@ -1,10 +1,11 @@
 #include "probfd/dominance/fact_names.h"
 
 #include "downward/abstract_task.h"
+#include "probfd/probabilistic_task.h"
 
 #include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <format>
 #include <ranges>
 
@@ -55,8 +56,37 @@ namespace probfd::dominance {
         return abstract_task->get_num_operators();
     }
 
-    size_t AbstractTaskFactNames::get_num_variables() const {
+    size_t AbstractTaskFactNames::get_num_variables() const
+    {
         return abstract_task->get_num_variables();
+    }
+
+    ProbabilisticTaskFactNames::ProbabilisticTaskFactNames( const std::shared_ptr<ProbabilisticTask>& probabilistic_task)
+        : probabilistic_task(probabilistic_task) {}
+
+    [[nodiscard]]
+    std::string ProbabilisticTaskFactNames::get_operator_name(int index) const {
+        return probabilistic_task->get_operator_name(index);
+    }
+    [[nodiscard]]
+    std::string ProbabilisticTaskFactNames::get_variable_name(int var) const {
+        return probabilistic_task->get_variable_name(var);
+    }
+    [[nodiscard]]
+    std::string ProbabilisticTaskFactNames::get_fact_name(const FactPair& fact_pair) const {
+        return probabilistic_task->get_fact_name(fact_pair);
+    }
+    [[nodiscard]]
+    std::unique_ptr<FactNames> ProbabilisticTaskFactNames::clone() const {
+        return std::make_unique<ProbabilisticTaskFactNames>(*this);
+    }
+    [[nodiscard]]
+    int ProbabilisticTaskFactNames::get_num_operators() const {
+        return probabilistic_task->get_num_operators();
+    }
+    [[nodiscard]]
+    size_t ProbabilisticTaskFactNames::get_num_variables() const {
+        return probabilistic_task->get_num_variables();
     }
 
     FactValueNames::FactValueNames(const std::shared_ptr<FactNames>& fact_names, int variable): fact_names(fact_names), variable(variable) { }
