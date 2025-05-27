@@ -39,7 +39,7 @@ void add_base_solver_options_except_algorithm_to_feature(Feature& feature)
         "report_epsilon",
         "Algorithms will report the current initial state objective value to "
         "stdout if it changed by more than this threshold.",
-        "1e-4");
+        "0");
     feature.add_option<bool>(
         "report_enabled",
         "Whether the algorithm should report its progress.",

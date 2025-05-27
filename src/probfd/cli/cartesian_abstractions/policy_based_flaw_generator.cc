@@ -20,7 +20,7 @@ public:
         add_option<probfd::value_t>(
             "convergence_epsilon",
             "The tolerance for convergence checks.",
-            "10e-4");
+            "0");
 
         add_option<int>(
             "max_search_states",

@@ -232,7 +232,7 @@ public:
         add_option<value_t>(
             "convergence_epsilon",
             "The tolerance for convergence checks.",
-            "10e-4");
+            "0");
     }
 
 protected:
@@ -257,7 +257,7 @@ public:
         add_option<value_t>(
             "convergence_epsilon",
             "The tolerance for convergence checks.",
-            "10e-4");
+            "0");
     }
 
 protected:

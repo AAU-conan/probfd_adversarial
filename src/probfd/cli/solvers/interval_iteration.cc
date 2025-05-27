@@ -65,7 +65,7 @@ public:
         add_option<probfd::value_t>(
             "convergence_epsilon",
             "The tolerance for convergence checks.",
-            "10e-4");
+            "0");
     }
 
 protected:

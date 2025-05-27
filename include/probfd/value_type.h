@@ -10,8 +10,7 @@
 namespace probfd {
 
 /// A constant representing state value \f$+\infty\f$.
-static constexpr value_t INFINITE_VALUE =
-    std::numeric_limits<double>::infinity();
+static constexpr value_t INFINITE_VALUE = std::numeric_limits<value_t>::has_infinity? std::numeric_limits<value_t>::infinity(): std::numeric_limits<value_t>::max();
 
 value_t fraction_to_value(int numerator, int denominator);
 value_t string_to_value(const std::string& str);
@@ -19,7 +18,7 @@ value_t abs(value_t val);
 
 constexpr value_t double_to_value(double d)
 {
-    return d;
+    return static_cast<value_t>(d);
 }
 
 /// User-defined floating-point literals for state values.
@@ -31,7 +30,7 @@ constexpr value_t operator""_vt(long double value)
 /// User-defined integer literals for state values.
 constexpr value_t operator""_vt(unsigned long long value)
 {
-    return double_to_value(static_cast<double>(value));
+    return static_cast<value_t>(value);
 }
 
 /// Equivalent to \f$|v_1 - v_2| \leq \epsilon\f$

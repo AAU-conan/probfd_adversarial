@@ -51,7 +51,7 @@ compute_label_ranks(const FactoredTransitionSystem& fts, int index)
         } else {
             label_rank = std::numeric_limits<double>::infinity();
             for (const auto& [src, targets] : transitions) {
-                label_rank = min(label_rank, distances.get_goal_distance(src));
+                label_rank = min(label_rank, static_cast<double>(distances.get_goal_distance(src)));
             }
         }
 

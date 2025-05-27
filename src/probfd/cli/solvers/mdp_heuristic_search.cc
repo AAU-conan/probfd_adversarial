@@ -25,7 +25,7 @@ void add_mdp_hs_base_options_to_feature(Feature& feature)
     feature.add_option<value_t>(
         "convergence_epsilon",
         "The tolerance for convergence checks.",
-        "10e-4");
+        "0");
     feature.add_option<bool>(
         "dual_bounds",
         "Specifies whether the algorithm should use an upper-bounding value "
