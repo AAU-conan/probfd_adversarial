@@ -13,6 +13,7 @@ CMakeUserPresets.json
 .vscode/
 docs/latex/
 docs/html/
+Testing
 
 # Translator output
 *.psas
