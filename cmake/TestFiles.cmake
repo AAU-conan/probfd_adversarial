@@ -92,6 +92,8 @@ create_library(
     HELP "Dominance Tests"
     SOURCES
         tests/dominance/factor_dominance_tests
+        tests/dominance/label_outcome_relation_tests
+        tests/dominance/ld_simulation_tests
     DEPENDS
         GTest::gtest
         test_utils
