@@ -134,6 +134,7 @@ def run_search(args):
          args.search_options.append(args.search_input)
 
     try:
+        print([executable] + args.search_options)
         call.check_call(
             "search",
             [executable] + args.search_options,

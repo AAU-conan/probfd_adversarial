@@ -61,9 +61,9 @@ namespace probfd::dominance {
         std::cout << std::endl << "LDSimulation finished: " << t() << std::endl;
 
 #ifndef NDEBUG
-        for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
-            sim->dump(task.get_factor(FactorIndex(factor)));
-        }
+        // for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
+        //     sim->dump(task.get_factor(FactorIndex(factor)));
+        // }
         // log << "Label relation: " << std::endl;
         // label_relation->dump(log, task);
 #endif
@@ -72,14 +72,14 @@ namespace probfd::dominance {
 
     bool update_local_relation(FactorIndex factor, const FTSTask& fts_task, const LabelOutcomeRelation& label_dominance,
                                FactorDominanceRelation& local_relation, const LabelOutcomeMap& label_outcome_map) {
-        std::println("Updating local relation for factor {}", factor.get());
+        // std::println("Updating local relation for factor {}", factor.get());
         bool changes = true;
         bool any_changes = false;
         const LabelledTransitionSystem& lts = fts_task.get_factor(factor);
         while (changes) {
             changes = local_relation.remove_simulations_if([&](State t, State s) {
                 //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
-                std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
+                // std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
                 //Check if really t simulates s
                 //for each transition s-l->:
                 // a) for all s-(l,o)-> s'. s' <= t and l dominated by noop?
@@ -87,43 +87,43 @@ namespace probfd::dominance {
                 return lts.applyPostSrc(s, [&](const LTSTransition &trs) {
                     // Checking all transitions of s, if this returns true, we remove the simulation!
 
-                    std::println("  Checking s-transition {}-({})->{}", lts.state_name(s), lts.label_group_name(trs.label_group), lts.state_names(trs.targets));
+                    // std::println("  Checking s-transition {}-({})->{}", lts.state_name(s), lts.label_group_name(trs.label_group), lts.state_names(trs.targets));
 
                     const std::vector<Label> &labels_trs = lts.get_labels(trs.label_group);
                     assert(!labels_trs.empty());
 
                     for (Label label_trs : labels_trs) {
-                        std::println("    Checking s-label {}", lts.label_name(label_trs));
+                        // std::println("    Checking s-label {}", lts.label_name(label_trs));
                         bool found = false;
                         for (auto [o, lo] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trs))) {
                             if (local_relation.simulates(t, trs.targets.at(o)) && label_dominance.noop_dominates_label_in_all_other(factor, fts_task, lo)) {
-                                std::println("      outcome {} simulated by noop", o);
+                                // std::println("      outcome {} simulated by noop", o);
                                 found = true;
                                 break;
                             }
                         }
                         if (!found) {
-                            std::println("      No outcome simulated by noop");
+                            // std::println("      No outcome simulated by noop");
                             found = lts.applyPostSrc(t, [&](const LTSTransition &trt) {
                                 // Checking all transitions of t, we just need to find one. If it returns true, we have found one.
-                                std::println("      Response {}-({})->{}",lts.state_name(t), lts.label_group_name(trt.label_group), lts.state_names(trt.targets));
+                                // std::println("      Response {}-({})->{}",lts.state_name(t), lts.label_group_name(trt.label_group), lts.state_names(trt.targets));
                                 const std::vector<Label> &labels_trt = lts.get_labels(trt.label_group);
                                 for (Label label_trt: labels_trt) {
-                                    std::println("        Checking label {}", lts.label_name(label_trt));
+                                    // std::println("        Checking label {}", lts.label_name(label_trt));
                                     for (auto [o_t, lo_t] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trt))) {
-                                        std::println("          Does t-outcome {} simulate s-outome ", o_t);
+                                        // std::println("          Does t-outcome {} simulate s-outome ", o_t);
                                         for (auto [o_s, lo_s] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trs))) {
                                             if (local_relation.simulates(trt.targets.at(o_t), trs.targets.at(o_s)) && label_dominance.label_dominates_label_in_all_other(factor, fts_task, lo_t, lo_s)) {
-                                                std::println("            {}. Yes", o_s);
+                                                // std::println("            {}. Yes", o_s);
                                                 goto ot_good;
                                             }
-                                            std::println("            {}. No  {} && {} ", o_s, local_relation.simulates(trt.targets.at(o_t), trs.targets.at(o_s)), label_dominance.label_dominates_label_in_all_other(factor, fts_task, lo_t, lo_s));
+                                            // std::println("            {}. No  {} && {} ", o_s, local_relation.simulates(trt.targets.at(o_t), trs.targets.at(o_s)), label_dominance.label_dominates_label_in_all_other(factor, fts_task, lo_t, lo_s));
                                         }
                                         // No o s.t. o2 dominates o, label_trt doesn't work
                                         goto label_trt_bad;
                                         ot_good:;
                                     }
-                                    std::println("      Works");
+                                    // std::println("      Works");
                                     // label_trt is good
                                     return true;
                                     label_trt_bad:;
@@ -133,20 +133,20 @@ namespace probfd::dominance {
                         }
 
                         if (!found) {
-                            std::println("    No response for label");
-                            std::println("Removing simulation");
+                            // std::println("    No response for label");
+                            // std::println("Removing simulation");
                             return true;
                         } else {
-                            std::println("    Response found");
+                            // std::println("    Response found");
                         }
                     }
-                    std::println("  Transition is simulated");
+                    // std::println("  Transition is simulated");
                     return false;
                 });
             });
             any_changes |= changes;
         }
-        local_relation.dump(lts);
+        // local_relation.dump(lts);
         return any_changes;
     }
 
@@ -155,7 +155,7 @@ namespace probfd::dominance {
         for (FactorIndex factor(0); factor < task.get_num_variables(); ++factor) {
             changes |= label_relation.update_factor(factor, task, *(sim[factor]), label_outcome_map);
         }
-        label_relation.dump(std::cout, task, label_outcome_map);
+        // label_relation.dump(std::cout, task, label_outcome_map);
         return changes;
     }
 

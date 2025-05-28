@@ -17,6 +17,7 @@
 #include "probfd/utils/state_name.h"
 
 #include "downward/utils/collections.h"
+#include "probfd/dominance/state_dominance_relation.h"
 
 #include <cassert>
 #include <deque>
@@ -32,6 +33,7 @@ inline void Statistics::print(std::ostream& out) const
         << std::endl;
     out << "  Evaluated state(s): " << evaluated_states << std::endl;
     out << "  Pruned state(s): " << pruned_states << std::endl;
+    out << "  Pruned transition(s): " << pruned_transitions << std::endl;
     out << "  Goal state(s): " << goal_states << std::endl;
     out << "  Terminal state(s): " << terminal_states << std::endl;
     out << "  Self-loop state(s): " << self_loop_states << std::endl;
@@ -216,6 +218,18 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     }
 
     std::erase_if(transition_tails, [&](auto& transition) {
+        if (dominance_relation) {
+            for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
+                auto& succ_info = state_infos_[succ_id];
+                if (dominance_relation->dominates(state, mdp.get_state(succ_id))) {
+                    ++statistics_.pruned_transitions;
+                    // if constexpr (std::is_same_v<State, downward::State>) {
+                        // std::println("Pruned {} -{}-> {} ", state_name(state), action_name(state.get_task(), transition.action), state_name(mdp.get_state(succ_id)));
+                    // }
+                    return true;
+                }
+            }
+        }
         return transition.successor_dist.non_source_successor_dist.empty();
     });
 
@@ -227,8 +241,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
 
     for (auto& transition : transition_tails) {
         std::vector<State> successors;
-        for (const auto& [succ_id, prob] :
-             transition.successor_dist.non_source_successor_dist) {
+        for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
             auto& succ_info = state_infos_[succ_id];
             successors.push_back(mdp.get_state(succ_id));
             if (succ_info.is_value_initialized()) continue;
@@ -252,6 +265,14 @@ void HeuristicSearchBase<State, Action, StateInfoT>::
     mdp.generate_all_transitions(state, transition_tails);
 
     std::erase_if(transition_tails, [&](auto& transition) {
+        if (dominance_relation) {
+            for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
+                auto& succ_info = state_infos_[succ_id];
+                if (dominance_relation->dominates(state, mdp.get_state(succ_id))) {
+                    return true;
+                }
+            }
+        }
         return transition.successor_dist.non_source_successor_dist.empty();
     });
 }
@@ -315,8 +336,7 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_qvalue(
 {
     // Compute the maximum of the successors
     AlgorithmValueType t_value(-INFINITE_VALUE);
-    for (const auto& [succ_id, prob] :
-         transition.successor_dist.non_source_successor_dist) {
+    for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
         if (state_infos_[succ_id].value > t_value) {
             t_value = state_infos_[succ_id].value;
         }
@@ -410,6 +430,7 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
 {
+    HSBase::dominance_relation = AlgorithmBase::dominance_relation;
     this->solve(mdp, h, initial_state, progress, max_time);
 
     /*

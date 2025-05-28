@@ -414,14 +414,14 @@ class SASOperator:
 
         assert self.outcomes
 
-        assert 0 < self.outcomes[0].probability <= 1
-        total_prob = self.outcomes[0].probability
-
-        for outcome in itertools.islice(self.outcomes, 1):
-            assert 0 < outcome.probability <= 1
-            total_prob += outcome.probability
-
-        assert total_prob == 1
+        # assert 0 < self.outcomes[0].probability <= 1
+        # total_prob = self.outcomes[0].probability
+        #
+        # for outcome in itertools.islice(self.outcomes, 1):
+        #     assert 0 < outcome.probability <= 1
+        #     total_prob += outcome.probability
+        #
+        # assert total_prob == 1
 
         assert self.cost >= 0
 

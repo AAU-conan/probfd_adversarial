@@ -189,6 +189,7 @@ public:
             // Do dominance analysis
             std::unique_ptr<dominance::StateDominanceRelation> state_dominance_relation = dominance_analysis->compute_dominance_relation(fts_task);
 
+            algorithm->dominance_relation = std::move(state_dominance_relation);
 
             std::unique_ptr<Policy<State, OperatorID>> policy =
                 algorithm->compute_policy(

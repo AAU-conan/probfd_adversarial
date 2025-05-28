@@ -26,6 +26,7 @@ auto AlgorithmAdaptor::compute_policy(
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
 {
+    algorithm->dominance_relation = this->dominance_relation;
     return algorithm->compute_policy(mdp, heuristic, state, progress, max_time);
 }
 

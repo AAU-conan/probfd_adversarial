@@ -9,7 +9,7 @@
 namespace probfd {
 
 /// Typedef for the state value type
-using value_t = int;
+using value_t = double;
 
 /**
  * @brief This type alias is declared as T if T models PassedByValue and

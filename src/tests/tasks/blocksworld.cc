@@ -31,240 +31,242 @@ BlocksworldTask::BlocksworldTask(
     , operators(put_table_begin + blocks)
     , initial_state(2 * blocks + 1, 0)
 {
-    /*
-     * Read the initial state
-     */
-
-    for (int i = 0; i != blocks; ++i) {
-        // Assume all blocks are clear and in the hand in the beginning
-        initial_state[get_clear_var(i)] = 1;
-        initial_state[get_location_var(i)] = blocks + 1;
-    }
-
-    std::set<int> seen;
-
-    for (const std::vector<int>& stack : initial) {
-        if (stack.empty()) abort();
-
-        for (size_t i = 0; i != stack.size() - 1; ++i) {
-            // Blocks may not be encountered twice
-            if (!seen.insert(stack[i]).second) abort();
-
-            // This block is on the succeeding block
-            initial_state[get_location_var(stack[i])] = stack[i + 1];
-
-            // The top of the succeeding block is not clear
-            initial_state[get_clear_var(stack[i + 1])] = 0;
-        }
-
-        // Blocks may not be encountered twice
-        if (!seen.insert(stack.back()).second) abort();
-
-        // The last block is on the table
-        initial_state[get_location_var(stack.back())] = blocks;
-    }
-
-    if (static_cast<int>(seen.size()) == blocks) {
-        // All blocks placed, hand is empty
-        initial_state[get_hand_var()] = 1;
-    } else {
-        initial_state[get_hand_var()] = 0;
-        if (static_cast<int>(seen.size()) != blocks - 1) {
-            // Only one block may be held
-            abort();
-        }
-    }
-
-    /*
-     * Read the goal state
-     */
-
-    seen.clear();
-
-    for (const std::vector<int>& stack : goal) {
-        if (stack.empty()) abort();
-
-        for (size_t i = 0; i != stack.size() - 1; ++i) {
-            // Blocks may not be encountered twice
-            if (!seen.insert(stack[i]).second) abort();
-
-            // This block must be on the succeeding block
-            goal_state.emplace_back(get_location_var(stack[i]), stack[i + 1]);
-        }
-
-        // Blocks may not be encountered twice
-        if (!seen.insert(stack.back()).second) abort();
-
-        // The last block is on the table
-        goal_state.emplace_back(get_location_var(stack.back()), blocks);
-    }
-
-    for (int i = 0; i != blocks; ++i) {
-        auto& info = variables[get_clear_var(i)];
-        info.name = std::format("Clear({})", i);
-        info.fact_names.emplace_back(std::format("Clear({}) = false", i));
-        info.fact_names.emplace_back(std::format("Clear({}) = true", i));
-    }
-
-    for (int i = 0; i != blocks; ++i) {
-        auto& info = variables[get_location_var(i)];
-        info.name = std::format("Location({})", i);
-
-        for (int j = 0; j != blocks; ++j) {
-            info.fact_names.emplace_back(
-                std::format("Location({}) = {}", i, j));
-        }
-
-        info.fact_names.emplace_back(std::format("Location({}) = table", i));
-        info.fact_names.emplace_back(std::format("Location({}) = hand", i));
-    }
-
-    {
-        auto& info = variables[get_hand_var()];
-        info.name = "HandEmpty";
-        info.fact_names.emplace_back("HandEmpty = false");
-        info.fact_names.emplace_back("HandEmpty = true");
-    }
-
-    for (int b1 = 0; b1 != blocks; ++b1) {
-        for (int b2 = 0; b2 != blocks; ++b2) {
-            if (b1 == b2) continue;
-            for (int b3 = 0; b3 != blocks; ++b3) {
-                if (b1 == b3 || b2 == b3) continue;
-                {
-                    auto& op_info =
-                        operators[get_operator_pick_up_tower_index(b1, b2, b3)];
-
-                    op_info.name =
-                        std::format("pick-tower {} {} {}", b1, b2, b3);
-                    op_info.cost = pick_tower_cost;
-                    op_info.preconditions = {
-                        get_fact_is_hand_empty(true),
-                        get_fact_is_block_clear(b1, true),
-                        get_fact_block_on_block(b1, b2),
-                        get_fact_block_on_block(b2, b3)};
-                    op_info.outcomes = {
-                        {0.1,
-                         {get_fact_is_hand_empty(false),
-                          get_fact_block_in_hand(b2),
-                          get_fact_is_block_clear(b3, true)}},
-                        {0.9, {}}};
-                }
-                {
-                    auto& op_info = operators
-                        [get_operator_put_tower_on_block_index(b1, b2, b3)];
-
-                    op_info.name =
-                        std::format("put-tower {} {} {}", b1, b2, b3);
-                    op_info.cost = put_tower_cost;
-                    op_info.preconditions = {
-                        get_fact_block_in_hand(b2),
-                        get_fact_block_on_block(b1, b2),
-                        get_fact_is_block_clear(b3, true)};
-                    op_info.outcomes = {
-                        {0.1,
-                         {get_fact_is_hand_empty(true),
-                          get_fact_block_on_block(b2, b3),
-                          get_fact_is_block_clear(b3, false)}},
-                        {0.9,
-                         {get_fact_is_hand_empty(true),
-                          get_fact_block_on_table(b2)}}};
-                }
-            }
-            {
-                auto& op_info = operators
-                    [get_operator_pick_up_block_on_block_index(b1, b2)];
-
-                op_info.name = std::format("pick-block {} {}", b1, b2);
-                op_info.cost = pick_block_cost;
-                op_info.preconditions = {
-                    get_fact_is_hand_empty(true),
-                    get_fact_is_block_clear(b1, true),
-                    get_fact_block_on_block(b1, b2)};
-                op_info.outcomes = {
-                    {0.75,
-                     {get_fact_is_block_clear(b2, true),
-                      get_fact_block_in_hand(b1),
-                      get_fact_is_hand_empty(false)}},
-                    {0.25,
-                     {get_fact_is_block_clear(b2, true),
-                      get_fact_block_on_table(b1)}}};
-            }
-
-            {
-                auto& op_info =
-                    operators[get_operator_put_block_on_block_index(b1, b2)];
-
-                op_info.name = std::format("put-block {} {}", b1, b2);
-                op_info.cost = put_block_cost;
-                op_info.preconditions = {
-                    get_fact_block_in_hand(b1),
-                    get_fact_is_block_clear(b1, true),
-                    get_fact_is_block_clear(b2, true)};
-                op_info.outcomes = {
-                    {0.75,
-                     {get_fact_is_hand_empty(true),
-                      get_fact_block_on_block(b1, b2),
-                      get_fact_is_block_clear(b2, false)}},
-                    {0.25,
-                     {get_fact_is_hand_empty(true),
-                      get_fact_block_on_table(b1)}}};
-            }
-
-            {
-                auto& op_info =
-                    operators[get_operator_put_tower_on_table_index(b1, b2)];
-
-                op_info.name = std::format("put-tower-on-table {} {}", b1, b2);
-                op_info.cost = put_tower_cost;
-                op_info.preconditions = {
-                    get_fact_block_in_hand(b2),
-                    get_fact_block_on_block(b1, b2)};
-                op_info.outcomes = {
-                    {1,
-                     {get_fact_is_hand_empty(true),
-                      get_fact_block_on_table(b2)}}};
-            }
-        }
-
-        {
-            auto& op_info =
-                operators[get_operator_pick_up_block_from_table_index(b1)];
-
-            op_info.name = std::format("pick-block-from-table {}", b1);
-            op_info.cost = pick_block_cost;
-            op_info.preconditions = {
-                get_fact_is_hand_empty(true),
-                get_fact_is_block_clear(b1, true),
-                get_fact_block_on_table(b1)};
-            op_info.outcomes = {
-                {0.75,
-                 {get_fact_is_hand_empty(false), get_fact_block_in_hand(b1)}},
-                {0.25, {}}};
-        }
-
-        {
-            auto& op_info =
-                operators[get_operator_put_block_on_table_index(b1)];
-
-            op_info.name = std::format("put-block-on-table {}", b1);
-            op_info.cost = put_block_cost;
-            op_info.preconditions = {
-                get_fact_block_in_hand(b1),
-                get_fact_is_block_clear(b1, true)};
-            op_info.outcomes = {
-                {1,
-                 {get_fact_is_hand_empty(true), get_fact_block_on_table(b1)}}};
-        }
-    }
-
-    // Sort fact ranges in increasing order of variable ids.
-    for (OperatorInfo& op_info : operators) {
-        sort(op_info.preconditions, {}, &FactPair::var);
-        for (EffectInfo& effect_info : op_info.outcomes) {
-            sort(effect_info.effects, {}, &FactPair::var);
-        }
-    }
+    throw std::runtime_error(
+        "BlocksworldTask no longer works with int value_t.");
+    // /*
+    //  * Read the initial state
+    //  */
+    //
+    // for (int i = 0; i != blocks; ++i) {
+    //     // Assume all blocks are clear and in the hand in the beginning
+    //     initial_state[get_clear_var(i)] = 1;
+    //     initial_state[get_location_var(i)] = blocks + 1;
+    // }
+    //
+    // std::set<int> seen;
+    //
+    // for (const std::vector<int>& stack : initial) {
+    //     if (stack.empty()) abort();
+    //
+    //     for (size_t i = 0; i != stack.size() - 1; ++i) {
+    //         // Blocks may not be encountered twice
+    //         if (!seen.insert(stack[i]).second) abort();
+    //
+    //         // This block is on the succeeding block
+    //         initial_state[get_location_var(stack[i])] = stack[i + 1];
+    //
+    //         // The top of the succeeding block is not clear
+    //         initial_state[get_clear_var(stack[i + 1])] = 0;
+    //     }
+    //
+    //     // Blocks may not be encountered twice
+    //     if (!seen.insert(stack.back()).second) abort();
+    //
+    //     // The last block is on the table
+    //     initial_state[get_location_var(stack.back())] = blocks;
+    // }
+    //
+    // if (static_cast<int>(seen.size()) == blocks) {
+    //     // All blocks placed, hand is empty
+    //     initial_state[get_hand_var()] = 1;
+    // } else {
+    //     initial_state[get_hand_var()] = 0;
+    //     if (static_cast<int>(seen.size()) != blocks - 1) {
+    //         // Only one block may be held
+    //         abort();
+    //     }
+    // }
+    //
+    // /*
+    //  * Read the goal state
+    //  */
+    //
+    // seen.clear();
+    //
+    // for (const std::vector<int>& stack : goal) {
+    //     if (stack.empty()) abort();
+    //
+    //     for (size_t i = 0; i != stack.size() - 1; ++i) {
+    //         // Blocks may not be encountered twice
+    //         if (!seen.insert(stack[i]).second) abort();
+    //
+    //         // This block must be on the succeeding block
+    //         goal_state.emplace_back(get_location_var(stack[i]), stack[i + 1]);
+    //     }
+    //
+    //     // Blocks may not be encountered twice
+    //     if (!seen.insert(stack.back()).second) abort();
+    //
+    //     // The last block is on the table
+    //     goal_state.emplace_back(get_location_var(stack.back()), blocks);
+    // }
+    //
+    // for (int i = 0; i != blocks; ++i) {
+    //     auto& info = variables[get_clear_var(i)];
+    //     info.name = std::format("Clear({})", i);
+    //     info.fact_names.emplace_back(std::format("Clear({}) = false", i));
+    //     info.fact_names.emplace_back(std::format("Clear({}) = true", i));
+    // }
+    //
+    // for (int i = 0; i != blocks; ++i) {
+    //     auto& info = variables[get_location_var(i)];
+    //     info.name = std::format("Location({})", i);
+    //
+    //     for (int j = 0; j != blocks; ++j) {
+    //         info.fact_names.emplace_back(
+    //             std::format("Location({}) = {}", i, j));
+    //     }
+    //
+    //     info.fact_names.emplace_back(std::format("Location({}) = table", i));
+    //     info.fact_names.emplace_back(std::format("Location({}) = hand", i));
+    // }
+    //
+    // {
+    //     auto& info = variables[get_hand_var()];
+    //     info.name = "HandEmpty";
+    //     info.fact_names.emplace_back("HandEmpty = false");
+    //     info.fact_names.emplace_back("HandEmpty = true");
+    // }
+    //
+    // for (int b1 = 0; b1 != blocks; ++b1) {
+    //     for (int b2 = 0; b2 != blocks; ++b2) {
+    //         if (b1 == b2) continue;
+    //         for (int b3 = 0; b3 != blocks; ++b3) {
+    //             if (b1 == b3 || b2 == b3) continue;
+    //             {
+    //                 auto& op_info =
+    //                     operators[get_operator_pick_up_tower_index(b1, b2, b3)];
+    //
+    //                 op_info.name =
+    //                     std::format("pick-tower {} {} {}", b1, b2, b3);
+    //                 op_info.cost = pick_tower_cost;
+    //                 op_info.preconditions = {
+    //                     get_fact_is_hand_empty(true),
+    //                     get_fact_is_block_clear(b1, true),
+    //                     get_fact_block_on_block(b1, b2),
+    //                     get_fact_block_on_block(b2, b3)};
+    //                 op_info.outcomes = {
+    //                     {0.1,
+    //                      {get_fact_is_hand_empty(false),
+    //                       get_fact_block_in_hand(b2),
+    //                       get_fact_is_block_clear(b3, true)}},
+    //                     {0.9, {}}};
+    //             }
+    //             {
+    //                 auto& op_info = operators
+    //                     [get_operator_put_tower_on_block_index(b1, b2, b3)];
+    //
+    //                 op_info.name =
+    //                     std::format("put-tower {} {} {}", b1, b2, b3);
+    //                 op_info.cost = put_tower_cost;
+    //                 op_info.preconditions = {
+    //                     get_fact_block_in_hand(b2),
+    //                     get_fact_block_on_block(b1, b2),
+    //                     get_fact_is_block_clear(b3, true)};
+    //                 op_info.outcomes = {
+    //                     {0.1,
+    //                      {get_fact_is_hand_empty(true),
+    //                       get_fact_block_on_block(b2, b3),
+    //                       get_fact_is_block_clear(b3, false)}},
+    //                     {0.9,
+    //                      {get_fact_is_hand_empty(true),
+    //                       get_fact_block_on_table(b2)}}};
+    //             }
+    //         }
+    //         {
+    //             auto& op_info = operators
+    //                 [get_operator_pick_up_block_on_block_index(b1, b2)];
+    //
+    //             op_info.name = std::format("pick-block {} {}", b1, b2);
+    //             op_info.cost = pick_block_cost;
+    //             op_info.preconditions = {
+    //                 get_fact_is_hand_empty(true),
+    //                 get_fact_is_block_clear(b1, true),
+    //                 get_fact_block_on_block(b1, b2)};
+    //             op_info.outcomes = {
+    //                 {0.75,
+    //                  {get_fact_is_block_clear(b2, true),
+    //                   get_fact_block_in_hand(b1),
+    //                   get_fact_is_hand_empty(false)}},
+    //                 {0.25,
+    //                  {get_fact_is_block_clear(b2, true),
+    //                   get_fact_block_on_table(b1)}}};
+    //         }
+    //
+    //         {
+    //             auto& op_info =
+    //                 operators[get_operator_put_block_on_block_index(b1, b2)];
+    //
+    //             op_info.name = std::format("put-block {} {}", b1, b2);
+    //             op_info.cost = put_block_cost;
+    //             op_info.preconditions = {
+    //                 get_fact_block_in_hand(b1),
+    //                 get_fact_is_block_clear(b1, true),
+    //                 get_fact_is_block_clear(b2, true)};
+    //             op_info.outcomes = {
+    //                 {0.75,
+    //                  {get_fact_is_hand_empty(true),
+    //                   get_fact_block_on_block(b1, b2),
+    //                   get_fact_is_block_clear(b2, false)}},
+    //                 {0.25,
+    //                  {get_fact_is_hand_empty(true),
+    //                   get_fact_block_on_table(b1)}}};
+    //         }
+    //
+    //         {
+    //             auto& op_info =
+    //                 operators[get_operator_put_tower_on_table_index(b1, b2)];
+    //
+    //             op_info.name = std::format("put-tower-on-table {} {}", b1, b2);
+    //             op_info.cost = put_tower_cost;
+    //             op_info.preconditions = {
+    //                 get_fact_block_in_hand(b2),
+    //                 get_fact_block_on_block(b1, b2)};
+    //             op_info.outcomes = {
+    //                 {1,
+    //                  {get_fact_is_hand_empty(true),
+    //                   get_fact_block_on_table(b2)}}};
+    //         }
+    //     }
+    //
+    //     {
+    //         auto& op_info =
+    //             operators[get_operator_pick_up_block_from_table_index(b1)];
+    //
+    //         op_info.name = std::format("pick-block-from-table {}", b1);
+    //         op_info.cost = pick_block_cost;
+    //         op_info.preconditions = {
+    //             get_fact_is_hand_empty(true),
+    //             get_fact_is_block_clear(b1, true),
+    //             get_fact_block_on_table(b1)};
+    //         op_info.outcomes = {
+    //             {0.75,
+    //              {get_fact_is_hand_empty(false), get_fact_block_in_hand(b1)}},
+    //             {0.25, {}}};
+    //     }
+    //
+    //     {
+    //         auto& op_info =
+    //             operators[get_operator_put_block_on_table_index(b1)];
+    //
+    //         op_info.name = std::format("put-block-on-table {}", b1);
+    //         op_info.cost = put_block_cost;
+    //         op_info.preconditions = {
+    //             get_fact_block_in_hand(b1),
+    //             get_fact_is_block_clear(b1, true)};
+    //         op_info.outcomes = {
+    //             {1,
+    //              {get_fact_is_hand_empty(true), get_fact_block_on_table(b1)}}};
+    //     }
+    // }
+    //
+    // // Sort fact ranges in increasing order of variable ids.
+    // for (OperatorInfo& op_info : operators) {
+    //     sort(op_info.preconditions, {}, &FactPair::var);
+    //     for (EffectInfo& effect_info : op_info.outcomes) {
+    //         sort(effect_info.effects, {}, &FactPair::var);
+    //     }
+    // }
 }
 
 int BlocksworldTask::get_num_variables() const

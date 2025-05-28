@@ -122,7 +122,7 @@ namespace probfd::dominance {
                                             }
                                         }
                                         if (!found) {
-                                            std::println("Not ({},{}) dominates ({},{}) in factor {}", lts.label_name(l1), o1, lts.label_name(l2), o2, factor.get());
+                                            // std::println("Not ({},{}) dominates ({},{}) in factor {}", lts.label_name(l1), o1, lts.label_name(l2), o2, factor.get());
                                             set_not_simulates(lo1, lo2, factor);
                                             changes = true;
                                             break; //Stop checking trs of l2

@@ -11,10 +11,6 @@ namespace downward {
     class State;
 }
 
-namespace utils {
-    class LogProxy;
-}
-
 namespace probfd::dominance {
     class LabelOutcomeRelation;
 
@@ -50,7 +46,12 @@ namespace probfd::dominance {
 
         double get_percentage_equal() const;
 
-        //Methods to access the underlying simulation relations
+        template<typename State>
+        bool dominates(const State& t, const State& s) const {
+            throw std::runtime_error("State Dominance Used on non-downward::State type. ");
+        }
+
+        // Methods to access the underlying simulation relations
         const std::vector<std::unique_ptr<FactorDominanceRelation> > &get_local_relations() const {
             return local_relations;
         }
