@@ -56,6 +56,7 @@ create_library(
         probabilistic_successor_generator
         mas_heuristic
         dominance
+        pruning
         search_space_draw
 )
 
@@ -323,11 +324,13 @@ create_library(
         probfd/cartesian_abstractions/subtask_generators
         probfd/cartesian_abstractions/trace_based_flaw_generator
         probfd/cartesian_abstractions/utils
+        probfd/pruning/no_pruning
     DEPENDS
         cartesian_abstractions
         additive_heuristic
         extra_probabilistic_tasks
         task_dependent_heuristic
+        pruning
 )
 
 create_library(
@@ -417,6 +420,17 @@ create_library(
         probfd/search_space_draw
     DEPENDS
         graphviz
+)
+
+create_library(
+    NAME pruning
+    HELP "Pruning"
+    SOURCES
+        probfd/pruning_method
+        probfd/task_pruning_factory
+        probfd/pruning/no_pruning
+    TARGET
+        probfd
 )
 
 create_library(

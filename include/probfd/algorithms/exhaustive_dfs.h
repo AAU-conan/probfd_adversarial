@@ -212,6 +212,7 @@ class ExhaustiveDepthFirstSearch : public IterativeMDPAlgorithm<State, Action> {
 
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyType = typename Base::PolicyType;
 
     using TransitionSorterType = TransitionSorter<State, Action>;
@@ -251,6 +252,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time);
@@ -258,6 +260,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time) override;
@@ -272,24 +275,28 @@ private:
     bool initialize_search_node(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID state_id,
         SearchNodeInfo& info);
 
     bool initialize_search_node(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         SearchNodeInfo& info);
 
     bool push_state(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID state_id,
         SearchNodeInfo& info);
 
     void run_exploration(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ProgressReport& progress);
 
     void propagate_value_along_trace(

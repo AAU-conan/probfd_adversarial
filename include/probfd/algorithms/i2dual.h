@@ -83,6 +83,7 @@ public:
     Interval solve(
         FDRMDP& mdp,
         FDREvaluator& heuristic,
+        FDRPruningMethod& pruning,
         const downward::State& initial_state,
         ProgressReport progress,
         double max_time);
@@ -90,6 +91,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         FDRMDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         const downward::State& initial_state,
         ProgressReport progress,
         double max_time) override;

@@ -190,6 +190,7 @@ template <typename State, typename Action, bool UseInterval>
 auto TopologicalValueIteration<State, Action, UseInterval>::compute_policy(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport,
     double max_time) -> std::unique_ptr<PolicyType>
@@ -199,6 +200,7 @@ auto TopologicalValueIteration<State, Action, UseInterval>::compute_policy(
     this->solve(
         mdp,
         heuristic,
+        pruning,
         mdp.get_state_id(state),
         value_store,
         max_time,
@@ -210,6 +212,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval TopologicalValueIteration<State, Action, UseInterval>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport,
     double max_time)
@@ -238,6 +241,7 @@ template <typename ValueStore>
 Interval TopologicalValueIteration<State, Action, UseInterval>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     StateID init_state_id,
     ValueStore& value_store,
     double max_time,
@@ -255,7 +259,7 @@ Interval TopologicalValueIteration<State, Action, UseInterval>::solve(
 
         do {
             explore = &dfs_stack_.back();
-        } while (initialize_state(mdp, heuristic, *explore, value_store) &&
+        } while (initialize_state(mdp, heuristic, pruning, *explore, value_store) &&
                  successor_loop(mdp, *explore, value_store, timer));
 
         do {
@@ -322,6 +326,7 @@ template <typename State, typename Action, bool UseInterval>
 bool TopologicalValueIteration<State, Action, UseInterval>::initialize_state(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     DFSExplorationState& exp_info,
     auto& value_store)
 {

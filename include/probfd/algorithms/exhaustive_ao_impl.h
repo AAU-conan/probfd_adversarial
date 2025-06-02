@@ -22,6 +22,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval ExhaustiveAOSearch<State, Action, UseInterval>::do_solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport& progress,
     double max_time)
@@ -58,7 +59,13 @@ Interval ExhaustiveAOSearch<State, Action, UseInterval>::do_solve(
         const State state = mdp.get_state(stateid);
 
         ClearGuard _(transitions_);
-        this->expand_and_initialize(mdp, heuristic, state, info, transitions_);
+        this->expand_and_initialize(
+            mdp,
+            heuristic,
+            pruning,
+            state,
+            info,
+            transitions_);
 
         const auto value = this->compute_bellman(state, transitions_, mdp);
         bool value_changed =
@@ -67,7 +74,7 @@ Interval ExhaustiveAOSearch<State, Action, UseInterval>::do_solve(
         // Terminal state
         if (info.is_solved()) {
             assert(transitions_.empty());
-            this->backpropagate_tip_value(mdp, transitions_, info, timer);
+            this->backpropagate_tip_value(mdp, pruning, transitions_, info, timer);
             continue;
         }
 
@@ -96,7 +103,7 @@ Interval ExhaustiveAOSearch<State, Action, UseInterval>::do_solve(
         if (info.unsolved == 0) {
             transitions_.clear();
             info.set_solved();
-            this->backpropagate_tip_value(mdp, transitions_, info, timer);
+            this->backpropagate_tip_value(mdp, pruning, transitions_, info, timer);
             continue;
         }
 
@@ -112,7 +119,7 @@ Interval ExhaustiveAOSearch<State, Action, UseInterval>::do_solve(
 
         if (value_changed) {
             transitions_.clear();
-            this->backpropagate_tip_value(mdp, transitions_, info, timer);
+            this->backpropagate_tip_value(mdp, pruning, transitions_, info, timer);
         }
     } while (!state_info.is_solved());
 

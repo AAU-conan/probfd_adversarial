@@ -102,6 +102,7 @@ public:
 private:
     using MDP = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
 
     using PolicyPicker = typename Base::PolicyPicker;
 
@@ -146,6 +147,7 @@ protected:
     Interval do_solve(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport& progress,
         double max_time) override;
@@ -156,6 +158,7 @@ private:
     void solve_with_vi_termination(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID stateid,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer);
@@ -163,6 +166,7 @@ private:
     void solve_without_vi_termination(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID stateid,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer);
@@ -170,13 +174,19 @@ private:
     bool policy_exploration(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID state,
         downward::utils::CountdownTimer& timer);
 
-    bool advance(MDP& mdp, DFSExplorationState& einfo, StateInfo& state_info);
+    bool advance(
+        MDP& mdp,
+        PruningType& pruning,
+        DFSExplorationState& einfo,
+        StateInfo& state_info);
 
     bool push_successor(
         MDP& mdp,
+        PruningType& pruning,
         DFSExplorationState& einfo,
         StateInfo& sinfo,
         downward::utils::CountdownTimer& timer);
@@ -186,16 +196,19 @@ private:
     bool initialize(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         DFSExplorationState& einfo,
         StateInfo& sinfo);
 
     bool value_iteration(
         MDP& mdp,
+        PruningType& pruning,
         const std::ranges::input_range auto& range,
         downward::utils::CountdownTimer& timer);
 
     std::pair<bool, bool> vi_step(
         MDP& mdp,
+        PruningType& pruning,
         const std::ranges::input_range auto& range,
         downward::utils::CountdownTimer& timer);
 };

@@ -78,6 +78,7 @@ class IDual : public MDPAlgorithm<State, Action> {
 
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyType = typename Base::PolicyType;
 
     downward::lp::LPSolver lp_solver_;
@@ -96,6 +97,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         ProgressReport progress,
         double max_time);
@@ -103,6 +105,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         ProgressReport progress,
         double max_time) override;
@@ -111,6 +114,7 @@ private:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         ProgressReport progress,
         double max_time,

@@ -21,13 +21,13 @@ AlgorithmAdaptor::~AlgorithmAdaptor() = default;
 
 auto AlgorithmAdaptor::compute_policy(
     MDPType& mdp,
-    HeuristicType& heuristic,
+    HeuristicType& h,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
 {
-    algorithm->dominance_relation = this->dominance_relation;
-    return algorithm->compute_policy(mdp, heuristic, state, progress, max_time);
+    return algorithm->compute_policy(mdp, h, pruning, state, progress, max_time);
 }
 
 void AlgorithmAdaptor::print_statistics(std::ostream& out) const

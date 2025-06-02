@@ -21,6 +21,7 @@ enum class Verbosity;
 namespace probfd {
 class TaskStateSpaceFactory;
 class TaskHeuristicFactory;
+class TaskPruningFactory;
 } // namespace probfd
 
 namespace probfd::solvers {
@@ -32,6 +33,7 @@ namespace probfd::cli::solvers {
 using MDPSolverNoAlgorithmArgs = std::tuple<
     std::shared_ptr<probfd::TaskStateSpaceFactory>,
     std::shared_ptr<probfd::TaskHeuristicFactory>,
+    std::shared_ptr<probfd::TaskPruningFactory>,
     downward::utils::Verbosity,
     std::string,
     bool,

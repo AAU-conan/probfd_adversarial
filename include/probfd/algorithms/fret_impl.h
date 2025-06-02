@@ -7,6 +7,7 @@
 #include "probfd/quotients/quotient_max_heuristic.h"
 
 #include "downward/utils/countdown_timer.h"
+#include "probfd/pruning/no_pruning.h"
 
 namespace probfd::algorithms::fret {
 
@@ -41,6 +42,7 @@ template <
 auto FRET<NestedAlgorithm, GreedyGraphGenerator>::compute_policy(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
@@ -50,6 +52,7 @@ auto FRET<NestedAlgorithm, GreedyGraphGenerator>::compute_policy(
     this->solve(
         quotient,
         qheuristic,
+        pruning,
         quotient.translate_state(state),
         progress,
         max_time);
@@ -168,6 +171,7 @@ template <
 Interval FRET<NestedAlgorithm, GreedyGraphGenerator>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time)
@@ -177,6 +181,7 @@ Interval FRET<NestedAlgorithm, GreedyGraphGenerator>::solve(
     return solve(
         quotient,
         qheuristic,
+        pruning,
         quotient.translate_state(state),
         progress,
         max_time);
@@ -198,6 +203,7 @@ template <
 Interval FRET<NestedAlgorithm, GreedyGraphGenerator>::solve(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    PruningType& pruning,
     ParamType<QState> state,
     ProgressReport& progress,
     double max_time)
@@ -211,7 +217,13 @@ Interval FRET<NestedAlgorithm, GreedyGraphGenerator>::solve(
 
     for (;;) {
         const Interval value =
-            heuristic_search(quotient, heuristic, state, progress, timer);
+            heuristic_search(
+            quotient,
+            heuristic,
+            pruning,
+            state,
+            progress,
+            timer);
 
         if (find_and_remove_traps(quotient, state, timer)) {
             return value;
@@ -227,6 +239,7 @@ template <
 Interval FRET<NestedAlgorithm, GreedyGraphGenerator>::heuristic_search(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    PruningType& pruning,
     ParamType<QState> state,
     ProgressReport& progress,
     downward::utils::CountdownTimer& timer)
@@ -235,9 +248,13 @@ Interval FRET<NestedAlgorithm, GreedyGraphGenerator>::heuristic_search(
     TimerScope scoped(statistics_.heuristic_search);
 #endif
 
+    pruning::NoPruningMethod<QState, QAction> no_pruning;
+    throw std::runtime_error("Pruning not implemented for quotient systems");
+
     return base_algorithm_.solve(
         quotient,
         heuristic,
+        no_pruning,
         state,
         progress,
         timer.get_remaining_time());
@@ -380,11 +397,13 @@ bool FRET<NestedAlgorithm, GreedyGraphGenerator>::push(
         return false;
     }
 
+    pruning::NoPruningMethod<QState, QAction> no_pruning;
+    throw std::runtime_error("Pruning not implemented for quotient systems");
+
     GreedyGraphGenerator greedy_graph;
     std::vector<QAction> aops;
     std::vector<StateID> succs;
-    if (greedy_graph
-            .get_successors(quotient, base_algorithm_, state_id, aops, succs)) {
+    if (greedy_graph.get_successors(quotient, no_pruning, base_algorithm_, state_id, aops, succs)) {
         ++unexpanded;
     }
 
@@ -401,6 +420,7 @@ bool FRET<NestedAlgorithm, GreedyGraphGenerator>::push(
 template <QuotientHeuristicSearchAlgorithm NestedAlgorithm>
 bool ValueGraph<NestedAlgorithm>::get_successors(
     QuotientSystem& quotient,
+    QPruning& pruning,
     NestedAlgorithm& base_algorithm,
     StateID qstate,
     std::vector<QAction>& aops,
@@ -415,6 +435,7 @@ bool ValueGraph<NestedAlgorithm>::get_successors(
     ClearGuard _(opt_transitions_, ids_, q_values);
     base_algorithm.generate_non_tip_transitions(
         quotient,
+        pruning,
         state,
         opt_transitions_);
 
@@ -446,6 +467,7 @@ bool ValueGraph<NestedAlgorithm>::get_successors(
 template <QuotientHeuristicSearchAlgorithm NestedAlgorithm>
 bool PolicyGraph<NestedAlgorithm>::get_successors(
     QuotientSystem& quotient,
+    QPruning& pruning,
     NestedAlgorithm& base_algorithm,
     StateID quotient_state_id,
     std::vector<QAction>& aops,

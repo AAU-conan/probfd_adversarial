@@ -49,6 +49,7 @@ class AOStar
 
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyPickerType = typename Base::PolicyPickerType;
     using StateInfo = typename Base::StateInfo;
 
@@ -72,6 +73,7 @@ protected:
     Interval do_solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         ProgressReport& progress,
         double max_time) override;

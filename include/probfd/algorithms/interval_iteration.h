@@ -64,6 +64,7 @@ class IntervalIteration : public MDPAlgorithm<State, Action> {
 
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyType = typename Base::PolicyType;
 
     using QSystem = quotients::QuotientSystem<State, Action>;
@@ -95,6 +96,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport report,
         double max_time);
@@ -102,6 +104,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport report,
         double max_time) override;
@@ -112,6 +115,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ValueStoreT& value_store,
         SetLike& dead_ends,
@@ -122,6 +126,7 @@ private:
     std::unique_ptr<QSystem> create_quotient(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         downward::utils::CountdownTimer& timer);
 
@@ -129,6 +134,7 @@ private:
     Interval mysolve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ValueStoreT& value_store,
         SetLike& dead_ends,

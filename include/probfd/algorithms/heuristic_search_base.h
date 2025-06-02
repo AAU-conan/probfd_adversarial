@@ -15,6 +15,8 @@
 #include "downward/utils/timer.h"
 #endif
 
+#include "probfd/heuristics/dead_end_pruning_heuristic.h"
+
 #include <algorithm>
 #include <iostream>
 #include <limits>
@@ -127,6 +129,7 @@ protected:
     using MDPType = MDP<State, Action>;
     using CostFunctionType = CostFunction<State, Action>;
     using HeuristicType = Heuristic<State>;
+    using PruningType = PruningMethod<State, Action>;
     using TransitionTailType = TransitionTail<Action>;
 
     using PolicyPickerType = PolicyPicker<State, Action>;
@@ -152,8 +155,6 @@ protected:
     internal::Statistics statistics_;
 
     std::unique_ptr<SearchSpaceDrawer> search_space_drawer = nullptr;
-
-    std::shared_ptr<dominance::StateDominanceRelation> dominance_relation = nullptr;
 
 public:
     explicit HeuristicSearchBase(
@@ -247,17 +248,20 @@ protected:
     void initialize_initial_state(
         MDPType& mdp,
         HeuristicType& h,
+        PruningType& pruning,
         ParamType<State> state);
 
     void expand_and_initialize(
         MDPType& mdp,
         HeuristicType& h,
+        PruningType& pruning,
         ParamType<State> state,
         StateInfo& state_info,
         std::vector<TransitionTailType>& transition_tails);
 
     void generate_non_tip_transitions(
         MDPType& mdp,
+        PruningType& pruning,
         ParamType<State> state,
         std::vector<TransitionTailType>& transition_tails) const;
 
@@ -267,6 +271,7 @@ private:
     void initialize(
         MDPType& mdp,
         HeuristicType& h,
+        PruningType& pruning,
         ParamType<State> state,
         StateInfo& state_info);
 
@@ -312,6 +317,7 @@ protected:
 
     using MDPType = typename AlgorithmBase::MDPType;
     using HeuristicType = typename AlgorithmBase::HeuristicType;
+    using PruningType = typename AlgorithmBase::PruningType;
 
     using StateInfo = typename HSBase::StateInfo;
     using PolicyPicker = typename HSBase::PolicyPickerType;
@@ -324,6 +330,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& h,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time);
@@ -331,6 +338,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& h,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time) final;
@@ -345,6 +353,7 @@ public:
     virtual Interval do_solve(
         MDPType& mdp,
         HeuristicType& h,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport& progress,
         double max_time) = 0;

@@ -41,12 +41,13 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time)
     {
         return algorithm
-            .compute_policy(mdp, heuristic, state, progress, max_time);
+            .compute_policy(mdp, heuristic, pruning, state, progress, max_time);
     }
 
     void handleEvent(const StateExpansion&) { ++state_expansions; }

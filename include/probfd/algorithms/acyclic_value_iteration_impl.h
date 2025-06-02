@@ -117,12 +117,13 @@ template <typename State, typename Action>
 auto AcyclicValueIteration<State, Action>::compute_policy(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport,
     double max_time) -> std::unique_ptr<PolicyType>
 {
     std::unique_ptr<MapPolicy> policy(new MapPolicy(&mdp));
-    this->solve(mdp, heuristic, initial_state, max_time, policy.get());
+    this->solve(mdp, heuristic, pruning, initial_state, max_time, policy.get());
     return policy;
 }
 
@@ -130,6 +131,7 @@ template <typename State, typename Action>
 Interval AcyclicValueIteration<State, Action>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport,
     double max_time)
@@ -141,6 +143,7 @@ template <typename State, typename Action>
 Interval AcyclicValueIteration<State, Action>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     double max_time,
     MapPolicy* policy)
@@ -158,7 +161,7 @@ Interval AcyclicValueIteration<State, Action>::solve(
     for (;;) {
         do {
             e = &dfs_stack_.top();
-        } while (expand_state(mdp, heuristic, *e) &&
+        } while (expand_state(mdp, heuristic, pruning, *e) &&
                  push_successor(mdp, policy, *e, timer));
 
         do {
@@ -217,6 +220,7 @@ template <typename State, typename Action>
 bool AcyclicValueIteration<State, Action>::expand_state(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     DFSExplorationState& e_info)
 {
     const State state = mdp.get_state(e_info.state_id);

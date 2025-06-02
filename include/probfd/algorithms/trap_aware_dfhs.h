@@ -87,6 +87,7 @@ class TADFHSImpl
     using QAction = quotients::QuotientAction<Action>;
 
     using QHeuristic = typename Base::HeuristicType;
+    using QPruning = typename Base::PruningType;
     using QuotientPolicyPicker = typename Base::PolicyPickerType;
     using StateInfo = typename Base::StateInfo;
 
@@ -190,6 +191,7 @@ public:
     Interval solve_quotient(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         ParamType<QState> qstate,
         ProgressReport& progress,
         double max_time);
@@ -200,6 +202,7 @@ private:
     void dfhs_vi_driver(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         StateID state,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer);
@@ -207,6 +210,7 @@ private:
     void dfhs_label_driver(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         StateID state,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer);
@@ -225,6 +229,7 @@ private:
     bool initialize(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         DFSExplorationState& einfo,
         StateInfo& state_info);
 
@@ -233,6 +238,7 @@ private:
     bool policy_exploration(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         StateID start_state,
         downward::utils::CountdownTimer& timer);
 
@@ -254,6 +260,7 @@ class TADepthFirstHeuristicSearch : public MDPAlgorithm<State, Action> {
     using PolicyType = typename Base::PolicyType;
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
 
     using QuotientSystem = quotients::QuotientSystem<State, Action>;
     using QState = quotients::QuotientState<State, Action>;
@@ -280,6 +287,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time);
@@ -287,6 +295,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time) override;

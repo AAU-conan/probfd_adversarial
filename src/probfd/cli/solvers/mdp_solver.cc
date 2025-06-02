@@ -4,6 +4,8 @@
 
 #include "probfd/cli/solvers/mdp_solver.h"
 
+#include "probfd/task_pruning_factory.h"
+
 #include <optional>
 
 using namespace probfd;
@@ -35,6 +37,10 @@ void add_base_solver_options_except_algorithm_to_feature(Feature& feature)
         "heuristic",
         "The heuristic to be used by the search.",
         "blind_heuristic()");
+    feature.add_option<std::shared_ptr<TaskPruningFactory>>(
+        "pruning",
+        "The pruning method to be used by the search.",
+        "no_pruning()");
     feature.add_option<value_t>(
         "report_epsilon",
         "Algorithms will report the current initial state objective value to "
@@ -67,7 +73,8 @@ MDPSolverArgs get_base_solver_args_from_options(const Options& options)
             options.get<std::shared_ptr<StatisticalMDPAlgorithmFactory>>(
                 "algorithm"),
             options.get<std::shared_ptr<TaskStateSpaceFactory>>("state_space"),
-            options.get<std::shared_ptr<TaskHeuristicFactory>>("heuristic")),
+            options.get<std::shared_ptr<TaskHeuristicFactory>>("heuristic"),
+            options.get<std::shared_ptr<TaskPruningFactory>>("pruning")),
         get_log_arguments_from_options(options),
         std::make_tuple(
             options.get<std::string>("policy_file"),
@@ -84,7 +91,8 @@ get_base_solver_args_no_algorithm_from_options(const Options& options)
     return std::tuple_cat(
         std::make_tuple(
             options.get<std::shared_ptr<TaskStateSpaceFactory>>("state_space"),
-            options.get<std::shared_ptr<TaskHeuristicFactory>>("heuristic")),
+            options.get<std::shared_ptr<TaskHeuristicFactory>>("heuristic"),
+            options.get<std::shared_ptr<TaskPruningFactory>>("pruning")),
         get_log_arguments_from_options(options),
         std::make_tuple(
             options.get<std::string>("policy_file"),

@@ -48,6 +48,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         FDRMDP&,
         FDREvaluator&,
+        FDRPruningMethod&,
         const downward::State&,
         ProgressReport progress,
         double max_time) override;

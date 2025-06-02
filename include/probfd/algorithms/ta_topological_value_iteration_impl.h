@@ -270,6 +270,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval TATopologicalValueIteration<State, Action, UseInterval>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport,
     double max_time)
@@ -412,6 +413,7 @@ template <typename State, typename Action, bool UseInterval>
 auto TATopologicalValueIteration<State, Action, UseInterval>::compute_policy(
     MDPType&,
     HeuristicType&,
+    PruningType&,
     ParamType<State>,
     ProgressReport,
     double) -> std::unique_ptr<PolicyType>

@@ -40,6 +40,7 @@ protected:
     using PolicyType = Policy<downward::State, downward::OperatorID>;
     using MDPType = MDP<downward::State, downward::OperatorID>;
     using HeuristicType = Heuristic<downward::State>;
+    using PruningType = PruningMethod<downward::State, downward::OperatorID>;
 
 public:
     virtual ~StatisticalMDPAlgorithm() = default;
@@ -50,6 +51,7 @@ public:
     virtual std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<downward::State> state,
         ProgressReport progress,
         double max_time) = 0;
@@ -59,7 +61,6 @@ public:
      */
     virtual void print_statistics(std::ostream&) const {}
 
-    std::shared_ptr<dominance::StateDominanceRelation> dominance_relation = nullptr;
 };
 
 class StatisticalMDPAlgorithmFactory {
@@ -90,6 +91,7 @@ public:
     virtual std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<downward::State> state,
         ProgressReport progress,
         double max_time) override;

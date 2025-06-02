@@ -31,6 +31,9 @@ class MDPAlgorithm;
 template <typename>
 class Heuristic;
 
+template <typename, typename>
+class PruningMethod;
+
 /// Type alias for state spaces in FDR.
 using FDRStateSpace = StateSpace<downward::State, downward::OperatorID>;
 
@@ -50,6 +53,8 @@ using FDRSimpleMDP = SimpleMDP<downward::State, downward::OperatorID>;
 
 /// Type alias for evaluators for states in FDR.
 using FDREvaluator = Heuristic<downward::State>;
+
+using FDRPruningMethod = PruningMethod<downward::State, downward::OperatorID>;
 
 // Type alias for search algorithms for MDPs in FDR.
 using FDRMDPAlgorithm = MDPAlgorithm<downward::State, downward::OperatorID>;

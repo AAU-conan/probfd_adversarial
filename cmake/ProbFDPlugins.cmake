@@ -4,7 +4,9 @@ create_library(
     SOURCES
         probfd/cli/solver_interface
         probfd/cli/task_heuristic_factory
+        probfd/cli/task_pruning_factory
     DEPENDS
+        no_pruning_method
         probfd_core
         parser
         plugins
@@ -448,6 +450,18 @@ create_library(
         plugins
     TARGET
         probfd
+)
+
+create_library(
+        NAME no_pruning_method
+        HELP "Enables the no pruning method plugin"
+        SOURCES
+            probfd/cli/pruning/no_pruning
+        DEPENDS
+            parser
+            plugins
+        TARGET
+            probfd
 )
 
 create_library(

@@ -183,13 +183,14 @@ template <typename State, typename Action, typename StateInfoT>
 void HeuristicSearchBase<State, Action, StateInfoT>::initialize_initial_state(
     MDPType& mdp,
     HeuristicType& h,
+    PruningType& pruning,
     ParamType<State> state)
 {
     StateInfo& info = this->state_infos_[mdp.get_state_id(state)];
 
     if (info.is_value_initialized()) return;
 
-    initialize(mdp, h, state, info);
+    initialize(mdp, h, pruning, state, info);
 
     statistics_.initial_state_estimate = info.get_value();
 }
@@ -198,6 +199,7 @@ template <typename State, typename Action, typename StateInfoT>
 void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     MDPType& mdp,
     HeuristicType& h,
+    PruningType& pruning,
     ParamType<State> state,
     StateInfo& state_info,
     std::vector<TransitionTailType>& transition_tails)
@@ -218,19 +220,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     }
 
     std::erase_if(transition_tails, [&](auto& transition) {
-        if (dominance_relation) {
-            for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
-                auto& succ_info = state_infos_[succ_id];
-                if (dominance_relation->dominates(state, mdp.get_state(succ_id))) {
-                    ++statistics_.pruned_transitions;
-                    // if constexpr (std::is_same_v<State, downward::State>) {
-                        // std::println("Pruned {} -{}-> {} ", state_name(state), action_name(state.get_task(), transition.action), state_name(mdp.get_state(succ_id)));
-                    // }
-                    return true;
-                }
-            }
-        }
-        return transition.successor_dist.non_source_successor_dist.empty();
+        return transition.successor_dist.non_source_successor_dist.empty() || pruning.can_prune_transition(mdp, state, transition);
     });
 
     if (transition_tails.empty()) {
@@ -245,7 +235,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
             auto& succ_info = state_infos_[succ_id];
             successors.push_back(mdp.get_state(succ_id));
             if (succ_info.is_value_initialized()) continue;
-            initialize(mdp, h, mdp.get_state(succ_id), succ_info);
+            initialize(mdp, h, pruning, mdp.get_state(succ_id), succ_info);
         }
 #ifndef NDEBUG
         if (this->search_space_drawer) search_space_drawer->add_successor(state, transition.action, successors);
@@ -257,6 +247,7 @@ template <typename State, typename Action, typename StateInfoT>
 void HeuristicSearchBase<State, Action, StateInfoT>::
     generate_non_tip_transitions(
         MDPType& mdp,
+        PruningType& pruning,
         ParamType<State> state,
         std::vector<TransitionTailType>& transition_tails) const
 {
@@ -265,15 +256,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::
     mdp.generate_all_transitions(state, transition_tails);
 
     std::erase_if(transition_tails, [&](auto& transition) {
-        if (dominance_relation) {
-            for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
-                auto& succ_info = state_infos_[succ_id];
-                if (dominance_relation->dominates(state, mdp.get_state(succ_id))) {
-                    return true;
-                }
-            }
-        }
-        return transition.successor_dist.non_source_successor_dist.empty();
+        return transition.successor_dist.non_source_successor_dist.empty() || pruning.can_prune_transition(mdp, state, transition);
     });
 }
 
@@ -290,6 +273,7 @@ template <typename State, typename Action, typename StateInfoT>
 void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
     MDPType& mdp,
     HeuristicType& h,
+    PruningType& pruning,
     ParamType<State> state,
     StateInfo& state_info)
 {
@@ -409,6 +393,7 @@ template <typename State, typename Action, typename StateInfoT>
 Interval HeuristicSearchAlgorithm<State, Action, StateInfoT>::solve(
     MDPType& mdp,
     HeuristicType& h,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time)
@@ -418,20 +403,20 @@ Interval HeuristicSearchAlgorithm<State, Action, StateInfoT>::solve(
         this->search_space_drawer = std::make_unique<SearchSpaceDrawer>("search_space.dot", *mdp.task_proxy);
     }
 #endif
-    HSBase::initialize_initial_state(mdp, h, state);
-    return this->do_solve(mdp, h, state, progress, max_time);
+    HSBase::initialize_initial_state(mdp, h, pruning, state);
+    return this->do_solve(mdp, h, pruning, state, progress, max_time);
 }
 
 template <typename State, typename Action, typename StateInfoT>
 auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
     MDPType& mdp,
     HeuristicType& h,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
 {
-    HSBase::dominance_relation = AlgorithmBase::dominance_relation;
-    this->solve(mdp, h, initial_state, progress, max_time);
+    this->solve(mdp, h, pruning, initial_state, progress, max_time);
 
     /*
      * Expand some greedy policy graph, starting from the initial state.
@@ -462,7 +447,11 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
             const State state = mdp.get_state(state_id);
 
             ClearGuard _(transition_tails, qvalues);
-            this->generate_non_tip_transitions(mdp, state, transition_tails);
+            this->generate_non_tip_transitions(
+                mdp,
+                pruning,
+                state,
+                transition_tails);
 
             this->compute_bellman_and_greedy(
                 state,

@@ -11,6 +11,7 @@
 #include "probfd/utils/guards.h"
 
 #include "downward/utils/countdown_timer.h"
+#include "probfd/pruning/no_pruning.h"
 
 #include <cassert>
 #include <iterator>
@@ -85,13 +86,14 @@ template <typename State, typename Action, bool UseInterval>
 Interval TADFHSImpl<State, Action, UseInterval>::solve_quotient(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     ParamType<QState> qstate,
     ProgressReport& progress,
     double max_time)
 {
     downward::utils::CountdownTimer timer(max_time);
 
-    Base::initialize_initial_state(quotient, heuristic, qstate);
+    Base::initialize_initial_state(quotient, heuristic, pruning, qstate);
 
     const StateID state_id = quotient.get_state_id(qstate);
     const StateInfo& state_info = this->state_infos_[state_id];
@@ -103,9 +105,9 @@ Interval TADFHSImpl<State, Action, UseInterval>::solve_quotient(
     statistics_.register_report(progress);
 
     if (!label_solved_) {
-        dfhs_vi_driver(quotient, heuristic, state_id, progress, timer);
+        dfhs_vi_driver(quotient, heuristic, pruning, state_id, progress, timer);
     } else {
-        dfhs_label_driver(quotient, heuristic, state_id, progress, timer);
+        dfhs_label_driver(quotient, heuristic, pruning, state_id, progress, timer);
     }
 
     return state_info.get_bounds();
@@ -123,13 +125,14 @@ template <typename State, typename Action, bool UseInterval>
 void TADFHSImpl<State, Action, UseInterval>::dfhs_vi_driver(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     const StateID state,
     ProgressReport& progress,
     downward::utils::CountdownTimer& timer)
 {
     bool terminate;
     do {
-        terminate = policy_exploration(quotient, heuristic, state, timer) &&
+        terminate = policy_exploration(quotient, heuristic, pruning, state, timer) &&
                     value_iteration(quotient, visited_states_, timer);
         visited_states_.clear();
         ++statistics_.iterations;
@@ -141,13 +144,14 @@ template <typename State, typename Action, bool UseInterval>
 void TADFHSImpl<State, Action, UseInterval>::dfhs_label_driver(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     const StateID state,
     ProgressReport& progress,
     downward::utils::CountdownTimer& timer)
 {
     bool terminate;
     do {
-        terminate = policy_exploration(quotient, heuristic, state, timer);
+        terminate = policy_exploration(quotient, heuristic, pruning, state, timer);
         ++statistics_.iterations;
         progress.print();
         assert(visited_states_.empty());
@@ -170,8 +174,14 @@ bool TADFHSImpl<State, Action, UseInterval>::advance(
         (backtrack_update_type_ == ON_DEMAND && !einfo.value_converged)) {
         const auto state = quotient.get_state(einfo.state_id);
 
+        pruning::NoPruningMethod<QState, QAction> no_pruning;
+
         ClearGuard _(transitions_, qvalues_);
-        this->generate_non_tip_transitions(quotient, state, transitions_);
+        this->generate_non_tip_transitions(
+            quotient,
+            no_pruning,
+            state,
+            transitions_);
 
         ++statistics_.backtracking_updates;
 
@@ -246,6 +256,7 @@ template <typename State, typename Action, bool UseInterval>
 bool TADFHSImpl<State, Action, UseInterval>::initialize(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     DFSExplorationState& einfo,
     StateInfo& state_info)
 {
@@ -266,11 +277,16 @@ bool TADFHSImpl<State, Action, UseInterval>::initialize(
             this->expand_and_initialize(
                 quotient,
                 heuristic,
+                pruning,
                 state,
                 state_info,
                 transitions_);
         } else {
-            this->generate_non_tip_transitions(quotient, state, transitions_);
+            this->generate_non_tip_transitions(
+                quotient,
+                pruning,
+                state,
+                transitions_);
         }
 
         ++statistics_.forward_updates;
@@ -338,6 +354,7 @@ template <typename State, typename Action, bool UseInterval>
 bool TADFHSImpl<State, Action, UseInterval>::policy_exploration(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     StateID start_state,
     downward::utils::CountdownTimer& timer)
 {
@@ -354,7 +371,7 @@ bool TADFHSImpl<State, Action, UseInterval>::policy_exploration(
         do {
             einfo = &dfs_stack_.back();
             sinfo = &this->state_infos_[einfo->state_id];
-        } while (initialize(quotient, heuristic, *einfo, *sinfo) &&
+        } while (initialize(quotient, heuristic, pruning, *einfo, *sinfo) &&
                  push_successor(quotient, *einfo, *sinfo, timer));
 
         do {
@@ -463,6 +480,8 @@ std::pair<bool, bool> TADFHSImpl<State, Action, UseInterval>::vi_step(
     bool values_not_conv = false;
     bool policy_not_conv = false;
 
+    pruning::NoPruningMethod<QState, QAction> no_pruning;
+
     for (const StateID id : range) {
         timer.throw_if_expired();
 
@@ -472,7 +491,11 @@ std::pair<bool, bool> TADFHSImpl<State, Action, UseInterval>::vi_step(
 
         ClearGuard _(transitions_, qvalues_);
 
-        this->generate_non_tip_transitions(quotient, state, transitions_);
+        this->generate_non_tip_transitions(
+            quotient,
+            no_pruning,
+            state,
+            transitions_);
 
         const auto value = this->compute_bellman_and_greedy(
             state,
@@ -523,6 +546,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval TADepthFirstHeuristicSearch<State, Action, UseInterval>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time)
@@ -532,6 +556,7 @@ Interval TADepthFirstHeuristicSearch<State, Action, UseInterval>::solve(
     return algorithm_.solve_quotient(
         quotient,
         qheuristic,
+        pruning,
         quotient.translate_state(state),
         progress,
         max_time);
@@ -541,15 +566,24 @@ template <typename State, typename Action, bool UseInterval>
 auto TADepthFirstHeuristicSearch<State, Action, UseInterval>::compute_policy(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
 {
     QuotientSystem quotient(mdp);
     quotients::QuotientMaxHeuristic<State, Action> qheuristic(heuristic);
+    pruning::NoPruningMethod<QState, QAction> no_pruning;
+    throw std::runtime_error("No pruning method for quotient states");
 
     auto qinit = quotient.translate_state(state);
-    algorithm_.solve_quotient(quotient, qheuristic, qinit, progress, max_time);
+    algorithm_.solve_quotient(
+        quotient,
+        qheuristic,
+        no_pruning,
+        qinit,
+        progress,
+        max_time);
 
     /*
      * The quotient policy only specifies the optimal actions between

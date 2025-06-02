@@ -138,6 +138,7 @@ class FRET
     using PolicyType = typename Base::PolicyType;
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
 
     using QuotientSystem = quotients::QuotientSystem<State, Action>;
 
@@ -158,6 +159,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time) override;
@@ -165,6 +167,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time);
@@ -175,6 +178,7 @@ private:
     Interval solve(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        PruningType& pruning,
         ParamType<QState> state,
         ProgressReport& progress,
         double max_time);
@@ -182,6 +186,7 @@ private:
     Interval heuristic_search(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        PruningType& pruning,
         ParamType<QState> state,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer);
@@ -208,6 +213,7 @@ class ValueGraph {
     using Action = RemoveQType<QAction>;
 
     using QuotientSystem = quotients::QuotientSystem<State, Action>;
+    using QPruning = PruningMethod<QState, QAction>;
 
     using AlgorithmValueType =
         typename NestedAlgorithm::HeuristicSearchBase::AlgorithmValueType;
@@ -219,6 +225,7 @@ class ValueGraph {
 public:
     bool get_successors(
         QuotientSystem& quotient,
+        QPruning& pruning,
         NestedAlgorithm& base_algorithm,
         StateID qstate,
         std::vector<QAction>& aops,
@@ -233,12 +240,14 @@ class PolicyGraph {
     using Action = RemoveQType<QAction>;
 
     using QuotientSystem = quotients::QuotientSystem<State, Action>;
+    using QPruning = PruningMethod<QState, QAction>;
 
     SuccessorDistribution t_;
 
 public:
     bool get_successors(
         QuotientSystem& quotient,
+        QPruning& pruning,
         NestedAlgorithm& base_algorithm,
         StateID quotient_state_id,
         std::vector<QAction>& aops,

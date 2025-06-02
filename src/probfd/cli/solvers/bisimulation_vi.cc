@@ -25,6 +25,7 @@
 #include "downward/merge_and_shrink/transition_system.h"
 
 #include "downward/utils/timer.h"
+#include "probfd/pruning/no_pruning.h"
 
 #include <iostream>
 #include <memory>
@@ -130,11 +131,13 @@ public:
                 heuristics::BlindEvaluator<QState> blind(
                     ops,
                     *task_cost_function);
+                pruning::NoPruningMethod<QState, QAction> no_pruning;
                 ProgressReport progress;
 
                 return solver->compute_policy(
                     state_space,
                     blind,
+                    no_pruning,
                     initial_state,
                     progress,
                     max_time);

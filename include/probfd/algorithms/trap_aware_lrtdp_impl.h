@@ -9,6 +9,7 @@
 #include "probfd/utils/guards.h"
 
 #include "downward/utils/countdown_timer.h"
+#include "probfd/pruning/no_pruning.h"
 
 namespace probfd::algorithms::trap_aware_lrtdp {
 
@@ -72,13 +73,14 @@ template <typename State, typename Action, bool UseInterval>
 Interval TALRTDPImpl<State, Action, UseInterval>::solve_quotient(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     ParamType<QState> state,
     ProgressReport& progress,
     double max_time)
 {
     downward::utils::CountdownTimer timer(max_time);
 
-    Base::initialize_initial_state(quotient, heuristic, state);
+    Base::initialize_initial_state(quotient, heuristic, pruning, state);
 
     const StateID state_id = quotient.get_state_id(state);
     const StateInfo& state_info = this->state_infos_[state_id];
@@ -91,7 +93,7 @@ Interval TALRTDPImpl<State, Action, UseInterval>::solve_quotient(
 
     bool terminate;
     do {
-        terminate = trial(quotient, heuristic, state_id, timer);
+        terminate = trial(quotient, heuristic, pruning, state_id, timer);
         assert(state_id == quotient.translate_state_id(state_id));
         statistics_.trials++;
         progress.print();
@@ -112,6 +114,7 @@ template <typename State, typename Action, bool UseInterval>
 bool TALRTDPImpl<State, Action, UseInterval>::trial(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     StateID start_state,
     downward::utils::CountdownTimer& timer)
 {
@@ -141,11 +144,16 @@ bool TALRTDPImpl<State, Action, UseInterval>::trial(
             this->expand_and_initialize(
                 quotient,
                 heuristic,
+                pruning,
                 state,
                 state_info,
                 transitions_);
         } else {
-            this->generate_non_tip_transitions(quotient, state, transitions_);
+            this->generate_non_tip_transitions(
+                quotient,
+                pruning,
+                state,
+                transitions_);
         }
 
         statistics_.trial_bellman_backups++;
@@ -212,6 +220,7 @@ bool TALRTDPImpl<State, Action, UseInterval>::trial(
         if (!check_and_solve(
                 quotient,
                 heuristic,
+                pruning,
                 current_trial_.back(),
                 timer)) {
             return false;
@@ -227,6 +236,7 @@ template <typename State, typename Action, bool UseInterval>
 bool TALRTDPImpl<State, Action, UseInterval>::check_and_solve(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     StateID init_state_id,
     downward::utils::CountdownTimer& timer)
 {
@@ -246,6 +256,7 @@ bool TALRTDPImpl<State, Action, UseInterval>::check_and_solve(
         } while (this->initialize(
                      quotient,
                      heuristic,
+                     pruning,
                      einfo->state,
                      *sinfo,
                      *einfo) &&
@@ -278,7 +289,7 @@ bool TALRTDPImpl<State, Action, UseInterval>::check_and_solve(
                     }
 
                     const QState state = quotient.get_state(einfo->state);
-                    do_non_tip_bellman_update(quotient, state, *sinfo);
+                    do_non_tip_bellman_update(quotient, pruning, state, *sinfo);
 
                     einfo->rv = false;
                 } else if (einfo->rv) {
@@ -294,7 +305,11 @@ bool TALRTDPImpl<State, Action, UseInterval>::check_and_solve(
                         if (info.is_solved()) continue;
 
                         const QState state = quotient.get_state(id);
-                        do_non_tip_bellman_update(quotient, state, info);
+                        do_non_tip_bellman_update(
+                            quotient,
+                            pruning,
+                            state,
+                            info);
                     }
                 }
 
@@ -362,6 +377,7 @@ template <typename State, typename Action, bool UseInterval>
 bool TALRTDPImpl<State, Action, UseInterval>::initialize(
     QuotientSystem& quotient,
     QHeuristic& heuristic,
+    QPruning& pruning,
     StateID state_id,
     StateInfo& state_info,
     DFSExplorationState& e_info)
@@ -385,11 +401,16 @@ bool TALRTDPImpl<State, Action, UseInterval>::initialize(
         this->expand_and_initialize(
             quotient,
             heuristic,
+            pruning,
             state,
             state_info,
             transitions_);
     } else {
-        this->generate_non_tip_transitions(quotient, state, transitions_);
+        this->generate_non_tip_transitions(
+            quotient,
+            pruning,
+            state,
+            transitions_);
     }
 
     ++this->statistics_.check_and_solve_bellman_backups;
@@ -437,11 +458,12 @@ bool TALRTDPImpl<State, Action, UseInterval>::initialize(
 template <typename State, typename Action, bool UseInterval>
 void TALRTDPImpl<State, Action, UseInterval>::do_non_tip_bellman_update(
     QuotientSystem& quotient,
+    QPruning& pruning,
     const QState& state,
     StateInfo& info)
 {
     ClearGuard _(transitions_, qvalues_);
-    this->generate_non_tip_transitions(quotient, state, transitions_);
+    this->generate_non_tip_transitions(quotient, pruning, state, transitions_);
 
     ++this->statistics_.check_and_solve_bellman_backups;
 
@@ -480,6 +502,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval TALRTDP<State, Action, UseInterval>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> s,
     ProgressReport progress,
     double max_time)
@@ -498,15 +521,18 @@ template <typename State, typename Action, bool UseInterval>
 auto TALRTDP<State, Action, UseInterval>::compute_policy(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
 {
     QuotientSystem quotient(mdp);
     quotients::QuotientMaxHeuristic<State, Action> qheuristic(heuristic);
+    pruning::NoPruningMethod<QState, QAction> no_pruning;
+    throw std::runtime_error("Pruning not implemented for quotient systems");
 
     QState qinit = quotient.translate_state(state);
-    algorithm_.solve_quotient(quotient, qheuristic, qinit, progress, max_time);
+    algorithm_.solve_quotient(quotient, qheuristic, no_pruning, qinit, progress, max_time);
 
     /*
      * The quotient policy only specifies the optimal actions between

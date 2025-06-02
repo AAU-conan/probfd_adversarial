@@ -31,6 +31,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval AOStar<State, Action, UseInterval>::do_solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport& progress,
     double max_time)
@@ -68,6 +69,7 @@ Interval AOStar<State, Action, UseInterval>::do_solve(
                 this->expand_and_initialize(
                     mdp,
                     heuristic,
+                    pruning,
                     state,
                     info,
                     transitions_);
@@ -82,6 +84,7 @@ Interval AOStar<State, Action, UseInterval>::do_solve(
                     transitions_.clear();
                     this->backpropagate_tip_value(
                         mdp,
+                        pruning,
                         transitions_,
                         info,
                         timer);
@@ -128,6 +131,7 @@ Interval AOStar<State, Action, UseInterval>::do_solve(
                     transitions_.clear();
                     this->backpropagate_tip_value(
                         mdp,
+                        pruning,
                         transitions_,
                         info,
                         timer);

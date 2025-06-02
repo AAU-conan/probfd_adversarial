@@ -111,6 +111,7 @@ void I2Dual::print_statistics(std::ostream& out) const
 Interval I2Dual::solve(
     FDRMDP& mdp,
     FDREvaluator& heuristic,
+    FDRPruningMethod& pruning,
     const State& initial_state,
     ProgressReport progress,
     double max_time)
@@ -306,6 +307,7 @@ Interval I2Dual::solve(
 auto I2Dual::compute_policy(
     FDRMDP&,
     FDREvaluator&,
+    FDRPruningMethod&,
     const State&,
     ProgressReport,
     double) -> std::unique_ptr<PolicyType>

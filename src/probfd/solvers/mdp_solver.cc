@@ -10,6 +10,7 @@
 #include "probfd/probabilistic_task.h"
 #include "probfd/task_cost_function.h"
 #include "probfd/task_heuristic_factory.h"
+#include "probfd/task_pruning_factory.h"
 #include "probfd/task_state_space_factory.h"
 #include "probfd/transition_tail.h"
 
@@ -95,6 +96,7 @@ MDPSolver::MDPSolver(
     std::shared_ptr<StatisticalMDPAlgorithmFactory> algorithm_factory,
     std::shared_ptr<TaskStateSpaceFactory> task_state_space_factory,
     std::shared_ptr<TaskHeuristicFactory> heuristic_factory,
+    std::shared_ptr<TaskPruningFactory> pruning_factory,
     Verbosity verbosity,
     std::string policy_filename,
     bool print_fact_names,
@@ -103,6 +105,7 @@ MDPSolver::MDPSolver(
     : algorithm_factory_(std::move(algorithm_factory))
     , task_state_space_factory_(std::move(task_state_space_factory))
     , heuristic_factory_(std::move(heuristic_factory))
+    , pruning_factory_(std::move(pruning_factory))
     , log_(get_log_for_verbosity(verbosity))
     , policy_filename(std::move(policy_filename))
     , print_fact_names(print_fact_names)
@@ -120,6 +123,7 @@ class Solver : public SolverInterface {
     std::unique_ptr<StatisticalMDPAlgorithm> algorithm;
     std::unique_ptr<TaskStateSpace> state_space;
     const std::shared_ptr<FDREvaluator> heuristic;
+    const std::shared_ptr<FDRPruningMethod> pruning_method;
     std::string algorithm_name;
     std::string policy_filename;
     bool print_fact_names;
@@ -133,6 +137,7 @@ public:
         std::unique_ptr<StatisticalMDPAlgorithm> algorithm,
         std::unique_ptr<TaskStateSpace> state_space,
         std::shared_ptr<FDREvaluator> heuristic,
+        std::shared_ptr<FDRPruningMethod> pruning_method,
         std::string algorithm_name,
         std::string policy_filename,
         bool print_fact_names,
@@ -143,6 +148,7 @@ public:
         , algorithm(std::move(algorithm))
         , state_space(std::move(state_space))
         , heuristic(std::move(heuristic))
+        , pruning_method(std::move(pruning_method))
         , algorithm_name(std::move(algorithm_name))
         , policy_filename(std::move(policy_filename))
         , print_fact_names(print_fact_names)
@@ -189,12 +195,11 @@ public:
             // Do dominance analysis
             std::unique_ptr<dominance::StateDominanceRelation> state_dominance_relation = dominance_analysis->compute_dominance_relation(fts_task);
 
-            algorithm->dominance_relation = std::move(state_dominance_relation);
-
             std::unique_ptr<Policy<State, OperatorID>> policy =
                 algorithm->compute_policy(
                     mdp,
                     *heuristic,
+                    *pruning_method,
                     initial_state,
                     progress,
                     max_time);
@@ -301,12 +306,20 @@ MDPSolver::create(const std::shared_ptr<ProbabilisticTask>& task)
         task,
         task_cost_function);
 
+    std::shared_ptr<FDRPruningMethod> pruning_method = run_time_logged(
+        std::cout,
+        "Constructing pruning method...",
+        &TaskPruningFactory::create_pruning_method,
+        *pruning_factory_,
+        task);
+
     return std::make_unique<Solver>(
         task,
         std::move(task_cost_function),
         std::move(algorithm),
         std::move(state_space),
         std::move(heuristic),
+        std::move(pruning_method),
         algorithm_factory_->get_algorithm_name(),
         policy_filename,
         print_fact_names,

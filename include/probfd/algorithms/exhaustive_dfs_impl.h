@@ -84,6 +84,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval ExhaustiveDepthFirstSearch<State, Action, UseInterval>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport progress,
     double)
@@ -109,6 +110,7 @@ template <typename State, typename Action, bool UseInterval>
 auto ExhaustiveDepthFirstSearch<State, Action, UseInterval>::compute_policy(
     MDPType&,
     HeuristicType&,
+    PruningType&,
     ParamType<State>,
     ProgressReport,
     double) -> std::unique_ptr<PolicyType>
@@ -141,6 +143,7 @@ bool ExhaustiveDepthFirstSearch<State, Action, UseInterval>::
     initialize_search_node(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID state_id,
         SearchNodeInfo& info)
 {
@@ -156,6 +159,7 @@ bool ExhaustiveDepthFirstSearch<State, Action, UseInterval>::
     initialize_search_node(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         SearchNodeInfo& info)
 {
@@ -194,6 +198,7 @@ template <typename State, typename Action, bool UseInterval>
 bool ExhaustiveDepthFirstSearch<State, Action, UseInterval>::push_state(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     StateID state_id,
     SearchNodeInfo& info)
 {
@@ -309,6 +314,7 @@ template <typename State, typename Action, bool UseInterval>
 void ExhaustiveDepthFirstSearch<State, Action, UseInterval>::run_exploration(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ProgressReport& progress)
 {
     using namespace std;

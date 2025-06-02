@@ -6,6 +6,7 @@
 #include "probfd/policy.h"
 #include "probfd/progress_report.h"
 #include "probfd/type_traits.h"
+#include "probfd/pruning_method.h"
 
 #include <limits>
 #include <memory>
@@ -37,6 +38,7 @@ protected:
 
     using MDPType = MDP<State, Action>;
     using HeuristicType = Heuristic<State>;
+    using PruningType = PruningMethod<State, Action>;
 
 public:
     virtual ~MDPAlgorithm() = default;
@@ -47,6 +49,7 @@ public:
     virtual std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time) = 0;

@@ -17,6 +17,7 @@
 namespace probfd {
 class ProbabilisticTask;
 class TaskHeuristicFactory;
+class TaskPruningFactory;
 class TaskStateSpaceFactory;
 
 template <typename, typename>
@@ -38,6 +39,7 @@ class MDPSolver : public TaskSolverFactory {
     const std::shared_ptr<StatisticalMDPAlgorithmFactory> algorithm_factory_;
     const std::shared_ptr<TaskStateSpaceFactory> task_state_space_factory_;
     const std::shared_ptr<TaskHeuristicFactory> heuristic_factory_;
+    const std::shared_ptr<TaskPruningFactory> pruning_factory_;
 
     mutable downward::utils::LogProxy log_;
 
@@ -55,6 +57,7 @@ public:
         std::shared_ptr<StatisticalMDPAlgorithmFactory> algorithm_factory,
         std::shared_ptr<TaskStateSpaceFactory> task_state_space_factory,
         std::shared_ptr<TaskHeuristicFactory> heuristic_factory,
+        std::shared_ptr<TaskPruningFactory> pruning_factory,
         downward::utils::Verbosity verbosity,
         std::string policy_filename,
         bool print_fact_names,

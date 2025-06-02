@@ -16,6 +16,7 @@
 #include "probfd/value_type.h"
 
 #include "downward/utils/countdown_timer.h"
+#include "probfd/pruning/no_pruning.h"
 
 #include <optional>
 
@@ -55,9 +56,12 @@ unique_ptr<Solution> ILAOPolicyGenerator::find_solution(
     ProgressReport report(0.0_vt);
     report.disable();
 
+    pruning::NoPruningMethod<int, const ProbabilisticTransition*> pruning;
+
     auto policy = talilao.compute_policy(
         abstraction,
         heuristic,
+        pruning,
         state->get_id(),
         report,
         timer.get_remaining_time());

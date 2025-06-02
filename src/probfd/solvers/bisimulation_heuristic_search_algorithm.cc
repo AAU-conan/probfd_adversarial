@@ -3,6 +3,7 @@
 #include "probfd/algorithms/open_list.h"
 
 #include "probfd/heuristics/constant_heuristic.h"
+#include "probfd/pruning/no_pruning.h"
 
 #include "probfd/bisimulation/bisimilar_state_space.h"
 
@@ -73,6 +74,7 @@ public:
 auto BisimulationBasedHeuristicSearchAlgorithm::compute_policy(
     FDRMDP&,
     FDREvaluator&,
+    FDRPruningMethod&,
     const State&,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
@@ -120,11 +122,13 @@ auto BisimulationBasedHeuristicSearchAlgorithm::compute_policy(
 
     ProbabilisticOperatorsProxy ops(*task_);
     heuristics::BlindEvaluator<QState> heuristic(ops, *task_cost_function_);
+    pruning::NoPruningMethod<QState, QAction> pruning;
 
     std::cout << "Running " << algorithm_name_ << "..." << std::endl;
     auto pi = algorithm_->compute_policy(
         state_space,
         heuristic,
+        pruning,
         initial_state,
         progress,
         max_time);

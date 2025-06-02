@@ -137,6 +137,7 @@ public:
 private:
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyPickerType = typename Base::PolicyPicker;
 
     using SuccessorSamplerType = SuccessorSampler<Action>;
@@ -172,6 +173,7 @@ protected:
     Interval do_solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport& progress,
         double max_time) override;
@@ -182,12 +184,14 @@ private:
     bool trial(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID initial_state,
         downward::utils::CountdownTimer& timer);
 
     bool check_and_solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID init_state_id,
         downward::utils::CountdownTimer& timer);
 };

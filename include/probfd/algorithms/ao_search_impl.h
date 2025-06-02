@@ -24,6 +24,7 @@ template <typename State, typename Action, typename StateInfo>
 void AOBase<State, Action, StateInfo>::backpropagate_tip_value(
     this auto& self,
     MDPType& mdp,
+    PruningType& pruning,
     std::vector<TransitionTail<Action>>& transitions,
     StateInfo& state_info,
     downward::utils::CountdownTimer& timer)
@@ -52,7 +53,7 @@ void AOBase<State, Action, StateInfo>::backpropagate_tip_value(
         const State state = mdp.get_state(elem.state_id);
 
         ClearGuard _(transitions);
-        self.generate_non_tip_transitions(mdp, state, transitions);
+        self.generate_non_tip_transitions(mdp, pruning, state, transitions);
 
         bool value_changed =
             self.update_value_check_solved(mdp, state, transitions, info);

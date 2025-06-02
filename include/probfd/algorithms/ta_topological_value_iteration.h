@@ -69,6 +69,7 @@ class TATopologicalValueIteration
 
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyType = typename Base::PolicyType;
 
     using AlgorithmValueType = algorithms::AlgorithmValue<UseInterval>;
@@ -300,6 +301,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport progress,
         double max_time) override;
@@ -330,6 +332,7 @@ private:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> state,
         ProgressReport,
         double max_time);

@@ -91,6 +91,7 @@ class TALRTDPImpl
     using QAction = quotients::QuotientAction<Action>;
 
     using QHeuristic = typename Base::HeuristicType;
+    using QPruning = typename Base::PruningType;
     using QuotientPolicyPicker = typename Base::PolicyPickerType;
     using StateInfo = typename Base::StateInfo;
 
@@ -182,6 +183,7 @@ public:
     Interval solve_quotient(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         ParamType<QState> state,
         ProgressReport& progress,
         double max_time);
@@ -192,12 +194,14 @@ private:
     bool trial(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         StateID start_state,
         downward::utils::CountdownTimer& timer);
 
     bool check_and_solve(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         StateID state_id,
         downward::utils::CountdownTimer& timer);
 
@@ -211,12 +215,14 @@ private:
     bool initialize(
         QuotientSystem& quotient,
         QHeuristic& heuristic,
+        QPruning& pruning,
         StateID state,
         StateInfo& state_info,
         DFSExplorationState& e_info);
 
     void do_non_tip_bellman_update(
         QuotientSystem& quotient,
+        QPruning& pruning,
         const QState& state,
         StateInfo& info);
 };
@@ -231,6 +237,7 @@ class TALRTDP : public MDPAlgorithm<State, Action> {
 
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
     using PolicyType = typename Base::PolicyType;
 
     using QuotientPolicyPicker = PolicyPicker<QState, QAction>;
@@ -252,6 +259,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> s,
         ProgressReport progress,
         double max_time);
@@ -259,6 +267,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> s,
         ProgressReport progress,
         double max_time) final;

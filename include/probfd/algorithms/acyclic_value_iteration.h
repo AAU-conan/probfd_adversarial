@@ -98,6 +98,7 @@ class AcyclicValueIteration
     using PolicyType = typename Base::PolicyType;
     using MDPType = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
+    using PruningType = typename Base::PruningType;
 
     using MapPolicy = policies::MapPolicy<State, Action>;
 
@@ -111,6 +112,7 @@ public:
     std::unique_ptr<PolicyType> compute_policy(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         ProgressReport progress,
         double max_time) override;
@@ -118,6 +120,7 @@ public:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         ProgressReport progress,
         double max_time);
@@ -126,6 +129,7 @@ private:
     Interval solve(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         ParamType<State> initial_state,
         double max_time,
         MapPolicy* policy);
@@ -139,6 +143,7 @@ private:
     bool expand_state(
         MDPType& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         DFSExplorationState& e_info);
 };
 

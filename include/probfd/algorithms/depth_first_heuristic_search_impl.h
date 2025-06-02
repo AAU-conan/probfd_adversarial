@@ -61,6 +61,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval HeuristicDepthFirstSearch<State, Action, UseInterval>::do_solve(
     MDP& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport& progress,
     double max_time)
@@ -75,9 +76,9 @@ Interval HeuristicDepthFirstSearch<State, Action, UseInterval>::do_solve(
     });
 
     if (!label_solved_) {
-        solve_with_vi_termination(mdp, heuristic, stateid, progress, timer);
+        solve_with_vi_termination(mdp, heuristic, pruning, stateid, progress, timer);
     } else {
-        solve_without_vi_termination(mdp, heuristic, stateid, progress, timer);
+        solve_without_vi_termination(mdp, heuristic, pruning, stateid, progress, timer);
     }
 
     return state_info.get_bounds();
@@ -95,14 +96,15 @@ void HeuristicDepthFirstSearch<State, Action, UseInterval>::
     solve_with_vi_termination(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID stateid,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer)
 {
     bool terminate;
     do {
-        terminate = policy_exploration(mdp, heuristic, stateid, timer) &&
-                    value_iteration(mdp, visited_states_, timer);
+        terminate = policy_exploration(mdp, heuristic, pruning, stateid, timer) &&
+                    value_iteration(mdp, pruning, visited_states_, timer);
 
         visited_states_.clear();
         ++statistics_.iterations;
@@ -115,13 +117,14 @@ void HeuristicDepthFirstSearch<State, Action, UseInterval>::
     solve_without_vi_termination(
         MDP& mdp,
         HeuristicType& heuristic,
+        PruningType& pruning,
         StateID stateid,
         ProgressReport& progress,
         downward::utils::CountdownTimer& timer)
 {
     bool terminate;
     do {
-        terminate = policy_exploration(mdp, heuristic, stateid, timer);
+        terminate = policy_exploration(mdp, heuristic, pruning, stateid, timer);
         ++statistics_.iterations;
         progress.print();
 #ifndef NDEBUG
@@ -135,6 +138,7 @@ template <typename State, typename Action, bool UseInterval>
 bool HeuristicDepthFirstSearch<State, Action, UseInterval>::policy_exploration(
     MDP& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     StateID state,
     downward::utils::CountdownTimer& timer)
 {
@@ -152,8 +156,8 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::policy_exploration(
         do {
             einfo = &dfs_stack_.back();
             sinfo = &this->state_infos_[einfo->state_id];
-        } while (initialize(mdp, heuristic, *einfo, *sinfo) &&
-                 push_successor(mdp, *einfo, *sinfo, timer));
+        } while (initialize(mdp, heuristic, pruning, *einfo, *sinfo) &&
+                 push_successor(mdp, pruning, *einfo, *sinfo, timer));
 
         // Iterative backtracking
         do {
@@ -200,14 +204,15 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::policy_exploration(
             }
 
             if (!bt_einfo.solved) einfo->solved = false;
-        } while (!advance(mdp, *einfo, *sinfo) ||
-                 !push_successor(mdp, *einfo, *sinfo, timer));
+        } while (!advance(mdp, pruning, *einfo, *sinfo) ||
+                 !push_successor(mdp, pruning, *einfo, *sinfo, timer));
     }
 }
 
 template <typename State, typename Action, bool UseInterval>
 bool HeuristicDepthFirstSearch<State, Action, UseInterval>::advance(
     MDP& mdp,
+    PruningType& pruning,
     DFSExplorationState& einfo,
     StateInfo& state_info)
 {
@@ -222,7 +227,7 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::advance(
         const auto state = mdp.get_state(einfo.state_id);
 
         ClearGuard _(transitions_, qvalues_);
-        this->generate_non_tip_transitions(mdp, state, transitions_);
+        this->generate_non_tip_transitions(mdp, pruning, state, transitions_);
 
         ++statistics_.backtracking_updates;
 
@@ -257,6 +262,7 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::advance(
 template <typename State, typename Action, bool UseInterval>
 bool HeuristicDepthFirstSearch<State, Action, UseInterval>::push_successor(
     MDP& mdp,
+    PruningType& pruning,
     DFSExplorationState& einfo,
     StateInfo& sinfo,
     downward::utils::CountdownTimer& timer)
@@ -281,7 +287,7 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::push_successor(
             // is on stack
             einfo.lowlink = std::min(einfo.lowlink, succ_stack_index);
         }
-    } while (advance(mdp, einfo, sinfo));
+    } while (advance(mdp, pruning, einfo, sinfo));
 
     return false;
 }
@@ -299,6 +305,7 @@ template <typename State, typename Action, bool UseInterval>
 bool HeuristicDepthFirstSearch<State, Action, UseInterval>::initialize(
     MDP& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     DFSExplorationState& einfo,
     StateInfo& sinfo)
 {
@@ -319,11 +326,16 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::initialize(
             this->expand_and_initialize(
                 mdp,
                 heuristic,
+                pruning,
                 state,
                 sinfo,
                 transitions_);
         } else {
-            this->generate_non_tip_transitions(mdp, state, transitions_);
+            this->generate_non_tip_transitions(
+                mdp,
+                pruning,
+                state,
+                transitions_);
         }
 
         statistics_.forward_updates++;
@@ -375,6 +387,7 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::initialize(
 template <typename State, typename Action, bool UseInterval>
 bool HeuristicDepthFirstSearch<State, Action, UseInterval>::value_iteration(
     MDP& mdp,
+    PruningType& pruning,
     const std::ranges::input_range auto& range,
     downward::utils::CountdownTimer& timer)
 {
@@ -382,7 +395,7 @@ bool HeuristicDepthFirstSearch<State, Action, UseInterval>::value_iteration(
 
     for (;;) {
         auto [value_changed, policy_changed] =
-            vi_step(mdp, range, timer);
+            vi_step(mdp, pruning, range, timer);
 
         if (policy_changed) return false;
         if (!value_changed) break;
@@ -395,6 +408,7 @@ template <typename State, typename Action, bool UseInterval>
 std::pair<bool, bool>
 HeuristicDepthFirstSearch<State, Action, UseInterval>::vi_step(
     MDP& mdp,
+    PruningType& pruning,
     const std::ranges::input_range auto& range,
     downward::utils::CountdownTimer& timer)
 {
@@ -410,7 +424,7 @@ HeuristicDepthFirstSearch<State, Action, UseInterval>::vi_step(
 
         ClearGuard _(transitions_, qvalues_);
 
-        this->generate_non_tip_transitions(mdp, state, transitions_);
+        this->generate_non_tip_transitions(mdp, pruning, state, transitions_);
 
         const auto value = this->compute_bellman_and_greedy(
             state,

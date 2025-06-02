@@ -39,6 +39,7 @@ template <typename State, typename Action, bool UseInterval>
 Interval LRTDP<State, Action, UseInterval>::do_solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> state,
     ProgressReport& progress,
     double max_time)
@@ -61,7 +62,7 @@ Interval LRTDP<State, Action, UseInterval>::do_solve(
 
     bool terminate;
     do {
-        terminate = trial(mdp, heuristic, state_id, timer);
+        terminate = trial(mdp, heuristic, pruning, state_id, timer);
         ++this->statistics_.trials;
         progress.print();
     } while (!terminate);
@@ -81,6 +82,7 @@ template <typename State, typename Action, bool UseInterval>
 bool LRTDP<State, Action, UseInterval>::trial(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     StateID initial_state,
     downward::utils::CountdownTimer& timer)
 {
@@ -112,11 +114,16 @@ bool LRTDP<State, Action, UseInterval>::trial(
             this->expand_and_initialize(
                 mdp,
                 heuristic,
+                pruning,
                 state,
                 state_info,
                 transitions_);
         } else {
-            this->generate_non_tip_transitions(mdp, state, transitions_);
+            this->generate_non_tip_transitions(
+                mdp,
+                pruning,
+                state,
+                transitions_);
         }
 
         ++this->statistics_.trial_bellman_backups;
@@ -176,7 +183,7 @@ bool LRTDP<State, Action, UseInterval>::trial(
     do {
         timer.throw_if_expired();
 
-        if (!check_and_solve(mdp, heuristic, current_trial_.back(), timer)) {
+        if (!check_and_solve(mdp, heuristic, pruning, current_trial_.back(), timer)) {
             return false;
         }
 
@@ -190,6 +197,7 @@ template <typename State, typename Action, bool UseInterval>
 bool LRTDP<State, Action, UseInterval>::check_and_solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     StateID init_state_id,
     downward::utils::CountdownTimer& timer)
 {
@@ -226,11 +234,16 @@ bool LRTDP<State, Action, UseInterval>::check_and_solve(
             this->expand_and_initialize(
                 mdp,
                 heuristic,
+                pruning,
                 state,
                 info,
                 transitions_);
         } else {
-            this->generate_non_tip_transitions(mdp, state, transitions_);
+            this->generate_non_tip_transitions(
+                mdp,
+                pruning,
+                state,
+                transitions_);
         }
 
         ++this->statistics_.check_and_solve_bellman_backups;
@@ -293,7 +306,11 @@ bool LRTDP<State, Action, UseInterval>::check_and_solve(
             const State state = mdp.get_state(sid);
 
             ClearGuard _(transitions_, qvalues_);
-            this->generate_non_tip_transitions(mdp, state, transitions_);
+            this->generate_non_tip_transitions(
+                mdp,
+                pruning,
+                state,
+                transitions_);
 
             statistics_.check_and_solve_bellman_backups++;
 

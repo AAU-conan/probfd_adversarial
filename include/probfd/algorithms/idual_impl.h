@@ -51,6 +51,7 @@ template <typename State, typename Action>
 Interval IDual<State, Action>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport progress,
     double max_time)
@@ -71,6 +72,7 @@ template <typename State, typename Action>
 auto IDual<State, Action>::compute_policy(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport progress,
     double max_time) -> std::unique_ptr<PolicyType>
@@ -80,6 +82,7 @@ auto IDual<State, Action>::compute_policy(
     solve(
         mdp,
         heuristic,
+        pruning,
         initial_state,
         progress,
         max_time,
@@ -188,6 +191,7 @@ template <typename State, typename Action>
 Interval IDual<State, Action>::solve(
     MDPType& mdp,
     HeuristicType& heuristic,
+    PruningType& pruning,
     ParamType<State> initial_state,
     ProgressReport progress,
     double max_time,
