@@ -1,0 +1,60 @@
+Bootstrap: localimage
+From: misc/apptainer/base_build.img
+Stage: build
+
+%setup
+    export PROBFD_ROOT=$SINGULARITY_ROOTFS/probfd
+    mkdir $PROBFD_ROOT
+
+    # Create directories for mounting
+    mkdir $PROBFD_ROOT/builds
+    mkdir $PROBFD_ROOT/src
+    mkdir $PROBFD_ROOT/include
+    mkdir $PROBFD_ROOT/bin
+    mkdir $PROBFD_ROOT/cmake
+
+    # Create output directory
+    mkdir $PROBFD_ROOT/build_output
+
+%files
+    # Put files into probfd
+    fast-downward.py /probfd/fast-downward.py
+    translate /probfd/translate
+    driver /probfd/driver
+    CMakeLists.txt /probfd/CMakeLists.txt
+    CMakePresets.json /probfd/CMakePresets.json
+
+
+%post
+    export PROBFD_ROOT=$SINGULARITY_ROOTFS/probfd
+    cd $PROBFD_ROOT
+    cmake "-DCMAKE_CXX_COMPILER=g++-14" --preset default
+    cmake --build --preset default-release
+    cp $PROBFD_ROOT/bin/default/release/probfd $PROBFD_ROOT/build_output/probfd
+
+# Stage 2: Run the planner
+Bootstrap: localimage
+From: misc/apptainer/base_run.img
+Stage: run
+
+%setup
+    mkdir $SINGULARITY_ROOTFS/builds
+
+# Copy planner binary and required files from Stage 1.
+%files
+    fast-downward.py /probfd/fast-downward.py
+    driver /probfd/driver
+    translate /probfd/translate
+    
+%files from build
+    /probfd/build_output
+
+%runscript
+    #! /bin/bash
+    $SINGULARITY_ROOTFS/probfd/fast-downward.py --build $SINGULARITY_ROOTFS/probfd/build_output/ ${@:1}
+
+   
+
+%labels
+Name        Dominance
+Authors     Alvaro Torralba <alto@cs.aau.dk>
