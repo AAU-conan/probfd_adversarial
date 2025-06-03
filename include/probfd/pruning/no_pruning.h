@@ -11,7 +11,7 @@ template <typename State, typename Action>
 class NoPruningMethod final : public PruningMethod<State, Action> {
 public:
     bool can_prune_transition(
-        const MDP<State, Action>& mdp,
+        StateSpace<State, Action>& state_space,
         ParamType<State> source_state,
         const TransitionTail<Action>& transition_tail) const override
     {

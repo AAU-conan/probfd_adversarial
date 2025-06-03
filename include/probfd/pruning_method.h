@@ -2,6 +2,7 @@
 #define PRUNING_METHOD_H
 
 #include "probfd/aliases.h"
+#include "state_space.h"
 
 namespace probfd {
 
@@ -24,7 +25,8 @@ public:
      * @brief Checks whether a transition can be pruned based on the source state,
      * action, and target state.
      */
-     virtual bool can_prune_transition(const MDP<State, Action>& mdp,
+     virtual bool can_prune_transition(
+                StateSpace<State, Action>& state_space,
                 ParamType<State> source_state,
                 const TransitionTail<Action>& transition_tail) const = 0;
 

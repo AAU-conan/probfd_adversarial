@@ -992,3 +992,16 @@ create_library(
     TARGET
         probfd
 )
+
+create_library(
+    NAME dominance_pruning_plugin
+    HELP "Enables the dominance pruning plugin"
+    SOURCES
+        probfd/cli/pruning/dominance_pruning
+    DEPENDS
+        dominance_pruning
+        parser
+        plugins
+    TARGET
+        probfd
+)

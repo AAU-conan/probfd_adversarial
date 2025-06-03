@@ -58,8 +58,6 @@ public:
      * @brief Prints algorithm statistics to the specified output stream.
      */
     virtual void print_statistics(std::ostream&) const {}
-
-    std::shared_ptr<dominance::StateDominanceRelation> dominance_relation = nullptr;
 };
 
 } // namespace probfd

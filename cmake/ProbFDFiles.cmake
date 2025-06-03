@@ -455,3 +455,13 @@ create_library(
             probfd/dominance/manual_label_outcome_relation
             probfd/dominance/manual_factor_dominance_relation
 )
+
+create_library(
+    NAME dominance_pruning
+    HELP "Dominance Pruning"
+    SOURCES
+        probfd/pruning/dominance_pruning
+    DEPENDS
+        dominance
+        pruning
+)
