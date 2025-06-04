@@ -61,11 +61,11 @@ namespace probfd::dominance {
         std::cout << std::endl << "LDSimulation finished: " << t() << std::endl;
 
 #ifndef NDEBUG
-        // for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
-        //     sim->dump(task.get_factor(FactorIndex(factor)));
-        // }
-        // log << "Label relation: " << std::endl;
-        // label_relation->dump(log, task);
+        for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
+            sim->dump(task.get_factor(FactorIndex(factor)));
+        }
+        std::cout << "Label relation: " << std::endl;
+        label_relation->dump(std::cout, task, label_outcome_map);
 #endif
         return std::make_unique<StateDominanceRelation>(std::move(local_relations), label_relation);
     }

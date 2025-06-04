@@ -41,21 +41,32 @@ namespace probfd::dominance {
     }
 }
 
-FTSTask::FTSTask(
-    const std::vector<LabelledTransitionSystem>& ltss, std::vector<int> label_costs, std::vector<int> label_outcomes,
-    const std::optional<std::shared_ptr<ProbabilisticTask>>& parent)
-    : transition_systems(), label_costs(std::move(label_costs)), label_outcomes(std::move(label_outcomes)), fact_names(
-          parent.has_value() ? static_cast<std::shared_ptr<FactNames>>(
-                                   std::make_shared<ProbabilisticTaskFactNames>(
+    FTSTask::FTSTask(
+        const std::vector<LabelledTransitionSystem>& ltss, std::vector<int> label_costs, std::vector<int> label_outcomes_,
+        const std::optional<std::shared_ptr<ProbabilisticTask>>& parent)
+        : transition_systems(), label_costs(std::move(label_costs)), label_outcomes(std::move(label_outcomes_)), fact_names(
+              parent.has_value() ? static_cast<std::shared_ptr<FactNames>>(
+                                       std::make_shared<ProbabilisticTaskFactNames>(
                                        parent.value()))
-                             : std::make_shared<NoFactNames>())
-{
+                                 : std::make_shared<NoFactNames>())
+    {
         for (const auto& lts : ltss) {
             transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(lts));
         }
-}
 
-int FTSTask::get_num_labels() const
+#ifndef NDEBUG
+        // Verify that all transitions have the correct number of outcomes
+        for (const auto& lts : transition_systems) {
+            for (const auto& tr : lts->get_transitions()) {
+                for (const auto& label : lts->get_labels(tr.label_group)) {
+                    assert(tr.targets.size() == label_outcomes[label]);
+                }
+            }
+        }
+#endif
+    }
+
+    int FTSTask::get_num_labels() const
     {
         return label_costs.size();
     }
@@ -182,7 +193,167 @@ int FTSTask::get_num_labels() const
         ABORT("Accessing operator_effect_condition of an FTSTask");
     }
 
-    FactPair FTSTask::get_operator_effect(int, int) const {
+    FactPair FTSTask::get_operator_effect(int, int) const
+    {
         ABORT("Accessing operator_effect of an FTSTask");
     }
-}
+
+    FTSTaskWrapper::FTSTaskWrapper(std::shared_ptr<FTSTask> fts_task_)
+        : fts_task(std::move(fts_task_))
+    {
+        for (Label label(0); label < fts_task->get_num_labels(); ++label) {
+            LabelOperator label_operator;
+            label_operator.outcomes.resize(fts_task->get_num_label_outcomes(label));
+            for (FactorIndex i(0); i < fts_task->get_num_variables(); ++i) {
+                const LabelledTransitionSystem& lts = fts_task->get_factor(i);
+                if (lts.is_relevant_label(label)) {
+                    auto trs = lts.get_transitions_label(label);
+                    assert(trs.size() == 1);
+                    label_operator.preconditions.emplace_back(i, trs[0].src);
+                    for (const auto& [o, tgt] : std::views::enumerate(trs[0].targets)) {
+                        label_operator.outcomes[o].emplace_back(i, tgt);
+                    }
+                }
+            }
+            label_operators.push_back(label_operator);
+        }
+
+        // Collect goals
+        for (FactorIndex i(0); i < fts_task->get_factors().size(); ++i) {
+            bool found_goal = false;
+            for (State s(0); s < fts_task->get_factor(i).size(); ++s) {
+                if (fts_task->get_factor(i).is_goal(s)) {
+                    assert(!found_goal);
+                    goals.emplace_back(FactPair(i, s));
+                    found_goal = true;
+                }
+            }
+        }
+    }
+
+    int FTSTaskWrapper::get_num_variables() const
+    {
+        return fts_task->get_num_variables();
+    }
+
+    std::string FTSTaskWrapper::get_variable_name(int var) const {
+        return fts_task->get_variable_name(var);
+    }
+
+    int FTSTaskWrapper::get_variable_domain_size(int var) const {
+        return fts_task->get_variable_domain_size(var);
+    }
+
+    int FTSTaskWrapper::get_variable_axiom_layer(int var) const {
+        return fts_task->get_variable_axiom_layer(var);
+    }
+
+    int FTSTaskWrapper::get_variable_default_axiom_value(int var) const {
+        return fts_task->get_variable_default_axiom_value(var);
+    }
+
+    std::string FTSTaskWrapper::get_fact_name(const FactPair& fact) const {
+        return fts_task->get_fact_name(fact);
+    }
+
+    int FTSTaskWrapper::get_num_axioms() const {
+        return fts_task->get_num_axioms();
+    }
+
+    std::string FTSTaskWrapper::get_axiom_name(int index) const {
+        return fts_task->get_axiom_name(index);
+    }
+
+    int FTSTaskWrapper::get_num_axiom_preconditions(int index) const {
+        return fts_task->get_num_axiom_preconditions(index);
+    }
+
+    FactPair FTSTaskWrapper::get_axiom_precondition(int op_index, int fact_index) const {
+        return fts_task->get_axiom_precondition(op_index, fact_index);
+    }
+
+    int FTSTaskWrapper::get_num_axiom_effects(int op_index) const {
+        return fts_task->get_num_axiom_effects(op_index);
+    }
+
+    int FTSTaskWrapper::get_num_axiom_effect_conditions(int op_index, int eff_index) const {
+        return fts_task->get_num_axiom_effect_conditions(op_index, eff_index);
+    }
+
+    FactPair FTSTaskWrapper::get_axiom_effect_condition(int op_index, int eff_index, int cond_index) const {
+        return fts_task->get_axiom_effect_condition(op_index, eff_index, cond_index);
+    }
+
+    FactPair FTSTaskWrapper::get_axiom_effect(int op_index, int eff_index) const {
+        return fts_task->get_axiom_effect(op_index, eff_index);
+    }
+
+    std::string FTSTaskWrapper::get_operator_name(int index) const {
+        return fts_task->get_operator_name(index);
+    }
+
+    int FTSTaskWrapper::get_num_operators() const {
+        return fts_task->get_num_operators();
+    }
+
+    int FTSTaskWrapper::get_num_operator_preconditions(int index) const {
+        return label_operators[index].preconditions.size();
+    }
+
+    FactPair FTSTaskWrapper::get_operator_precondition(int op_index, int fact_index) const {
+        return label_operators[op_index].preconditions[fact_index];
+    }
+
+    int FTSTaskWrapper::get_num_goals() const {
+        return goals.size();
+    }
+
+    FactPair FTSTaskWrapper::get_goal_fact(int index) const {
+        return goals.at(index);
+    }
+
+    std::vector<int> FTSTaskWrapper::get_initial_state_values() const {
+        return fts_task->get_initial_state_values();
+    }
+
+    value_t FTSTaskWrapper::get_goal_termination_cost() const {
+        return 0.0;
+    }
+
+    value_t FTSTaskWrapper::get_non_goal_termination_cost() const {
+        return INFINITE_VALUE;
+    }
+
+    value_t FTSTaskWrapper::get_operator_cost(int op_index) const {
+        return fts_task->get_label_cost(Label(op_index));
+    }
+
+    int FTSTaskWrapper::get_num_operator_outcomes(int op_index) const {
+        return fts_task->get_num_label_outcomes(Label(op_index));
+    }
+
+    value_t FTSTaskWrapper::get_operator_outcome_probability(int op_index, int outcome_index) const {
+        return -0xFACE; // No probabilities in FTSTASK
+    }
+
+    int FTSTaskWrapper::get_operator_outcome_id(int op_index, int outcome_index) const {
+        ABORT("Accessing operator_outcome_id of an FTSTaskWrapper");
+    }
+
+    int FTSTaskWrapper::get_num_operator_outcome_effects(int op_index, int outcome_index) const {
+        return label_operators[op_index].outcomes[outcome_index].size();
+    }
+
+    downward::FactPair FTSTaskWrapper::get_operator_outcome_effect(int op_index, int outcome_index, int eff_index) const {
+        return label_operators[op_index].outcomes[outcome_index][eff_index];
+    }
+
+    int FTSTaskWrapper::get_num_operator_outcome_effect_conditions(int op_index, int outcome_index, int eff_index) const {
+        return 0; // No conditions in FTSTask
+    }
+
+    downward::FactPair FTSTaskWrapper::get_operator_outcome_effect_condition(int op_index, int outcome_index, int eff_index, int cond_index) const {
+        ABORT("Accessing operator_outcome_effect_condition of an FTSTaskWrapper");
+    }
+
+} // namespace probfd::dominance

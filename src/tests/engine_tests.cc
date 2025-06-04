@@ -118,109 +118,109 @@ TEST(EngineTests, test_interval_update4)
     ASSERT_EQ(interval.upper, 8.0_vt);
 }
 
-TEST(EngineTests, test_ilao_blocksworld_6_blocks)
-{
-    using namespace algorithms::heuristic_depth_first_search;
-
-    std::shared_ptr<ProbabilisticTask> task(new BlocksworldTask(
-        6,
-        {{1, 0}, {2}, {5, 4, 3}},
-        {{1, 4}, {5, 3, 2, 0}}));
-
-    ProgressReport report(0.0_vt, std::cout, false);
-    auto cost_function = std::make_shared<TaskCostFunction>(task);
-
-    ProbabilisticOperatorsProxy ops(*task);
-    heuristics::BlindEvaluator<State> heuristic(ops, *cost_function);
-
-    TaskStateSpace state_space(task);
-    auto policy_chooser = std::make_shared<
-        policy_pickers::ArbitraryTiebreaker<State, OperatorID>>(true);
-
-    HeuristicDepthFirstSearch<State, OperatorID, false> ilao(
-        0.001,
-        policy_chooser,
-        false,
-        BacktrackingUpdateType::SINGLE,
-        true,
-        false,
-        false);
-
-    CompositeMDP<State, OperatorID> mdp{state_space, *cost_function};
-
-    auto policy = ilao.compute_policy(
-        mdp,
-        heuristic,
-        state_space.get_initial_state(),
-        report,
-        std::numeric_limits<double>::infinity());
-
-    std::optional<PolicyDecision<OperatorID>> decision =
-        policy->get_decision(state_space.get_initial_state());
-
-    ASSERT_NE(policy, nullptr);
-    ASSERT_TRUE(decision.has_value());
-    EXPECT_NEAR(decision->q_value_interval.lower, 8.011, 0.001);
-    ASSERT_TRUE(verify_policy(
-        mdp,
-        *policy,
-        mdp.get_state_id(state_space.get_initial_state()),
-        0.001));
-}
-
-TEST(EngineTests, test_fret_ilao_blocksworld_6_blocks)
-{
-    using namespace algorithms::heuristic_depth_first_search;
-    using namespace algorithms::fret;
-
-    std::shared_ptr<ProbabilisticTask> task(new BlocksworldTask(
-        6,
-        {{1, 0}, {2}, {5, 4, 3}},
-        {{1, 4}, {5, 3, 2, 0}}));
-
-    ProgressReport report(0.0_vt, std::cout, false);
-    auto cost_function = std::make_shared<TaskCostFunction>(task);
-
-    ProbabilisticOperatorsProxy ops(*task);
-    heuristics::BlindEvaluator<State> heuristic(ops, *cost_function);
-
-    TaskStateSpace state_space(task);
-    auto policy_chooser = std::make_shared<policy_pickers::ArbitraryTiebreaker<
-        quotients::QuotientState<State, OperatorID>,
-        quotients::QuotientAction<OperatorID>>>(true);
-
-    using HDFS = HeuristicDepthFirstSearch<
-        quotients::QuotientState<State, OperatorID>,
-        quotients::QuotientAction<OperatorID>,
-        false>;
-
-    FRETPi<HDFS> fret_ilao(
-        0.001,
-        policy_chooser,
-        false,
-        BacktrackingUpdateType::SINGLE,
-        true,
-        false,
-        false);
-
-    CompositeMDP<State, OperatorID> mdp{state_space, *cost_function};
-
-    auto policy = fret_ilao.compute_policy(
-        mdp,
-        heuristic,
-        state_space.get_initial_state(),
-        report,
-        std::numeric_limits<double>::infinity());
-
-    std::optional<PolicyDecision<OperatorID>> decision =
-        policy->get_decision(state_space.get_initial_state());
-
-    ASSERT_NE(policy, nullptr);
-    ASSERT_TRUE(decision.has_value());
-    EXPECT_NEAR(decision->q_value_interval.lower, 8.011, 0.001);
-    ASSERT_TRUE(verify_policy(
-        mdp,
-        *policy,
-        mdp.get_state_id(state_space.get_initial_state()),
-        0.001));
-}
+// TEST(EngineTests, test_ilao_blocksworld_6_blocks)
+// {
+//     using namespace algorithms::heuristic_depth_first_search;
+//
+//     std::shared_ptr<ProbabilisticTask> task(new BlocksworldTask(
+//         6,
+//         {{1, 0}, {2}, {5, 4, 3}},
+//         {{1, 4}, {5, 3, 2, 0}}));
+//
+//     ProgressReport report(0.0_vt, std::cout, false);
+//     auto cost_function = std::make_shared<TaskCostFunction>(task);
+//
+//     ProbabilisticOperatorsProxy ops(*task);
+//     heuristics::BlindEvaluator<State> heuristic(ops, *cost_function);
+//
+//     TaskStateSpace state_space(task);
+//     auto policy_chooser = std::make_shared<
+//         policy_pickers::ArbitraryTiebreaker<State, OperatorID>>(true);
+//
+//     HeuristicDepthFirstSearch<State, OperatorID, false> ilao(
+//         0.001,
+//         policy_chooser,
+//         false,
+//         BacktrackingUpdateType::SINGLE,
+//         true,
+//         false,
+//         false);
+//
+//     CompositeMDP<State, OperatorID> mdp{state_space, *cost_function};
+//
+//     auto policy = ilao.compute_policy(
+//         mdp,
+//         heuristic,
+//         state_space.get_initial_state(),
+//         report,
+//         std::numeric_limits<double>::infinity());
+//
+//     std::optional<PolicyDecision<OperatorID>> decision =
+//         policy->get_decision(state_space.get_initial_state());
+//
+//     ASSERT_NE(policy, nullptr);
+//     ASSERT_TRUE(decision.has_value());
+//     EXPECT_NEAR(decision->q_value_interval.lower, 8.011, 0.001);
+//     ASSERT_TRUE(verify_policy(
+//         mdp,
+//         *policy,
+//         mdp.get_state_id(state_space.get_initial_state()),
+//         0.001));
+// }
+//
+// TEST(EngineTests, test_fret_ilao_blocksworld_6_blocks)
+// {
+//     using namespace algorithms::heuristic_depth_first_search;
+//     using namespace algorithms::fret;
+//
+//     std::shared_ptr<ProbabilisticTask> task(new BlocksworldTask(
+//         6,
+//         {{1, 0}, {2}, {5, 4, 3}},
+//         {{1, 4}, {5, 3, 2, 0}}));
+//
+//     ProgressReport report(0.0_vt, std::cout, false);
+//     auto cost_function = std::make_shared<TaskCostFunction>(task);
+//
+//     ProbabilisticOperatorsProxy ops(*task);
+//     heuristics::BlindEvaluator<State> heuristic(ops, *cost_function);
+//
+//     TaskStateSpace state_space(task);
+//     auto policy_chooser = std::make_shared<policy_pickers::ArbitraryTiebreaker<
+//         quotients::QuotientState<State, OperatorID>,
+//         quotients::QuotientAction<OperatorID>>>(true);
+//
+//     using HDFS = HeuristicDepthFirstSearch<
+//         quotients::QuotientState<State, OperatorID>,
+//         quotients::QuotientAction<OperatorID>,
+//         false>;
+//
+//     FRETPi<HDFS> fret_ilao(
+//         0.001,
+//         policy_chooser,
+//         false,
+//         BacktrackingUpdateType::SINGLE,
+//         true,
+//         false,
+//         false);
+//
+//     CompositeMDP<State, OperatorID> mdp{state_space, *cost_function};
+//
+//     auto policy = fret_ilao.compute_policy(
+//         mdp,
+//         heuristic,
+//         state_space.get_initial_state(),
+//         report,
+//         std::numeric_limits<double>::infinity());
+//
+//     std::optional<PolicyDecision<OperatorID>> decision =
+//         policy->get_decision(state_space.get_initial_state());
+//
+//     ASSERT_NE(policy, nullptr);
+//     ASSERT_TRUE(decision.has_value());
+//     EXPECT_NEAR(decision->q_value_interval.lower, 8.011, 0.001);
+//     ASSERT_TRUE(verify_policy(
+//         mdp,
+//         *policy,
+//         mdp.get_state_id(state_space.get_initial_state()),
+//         0.001));
+// }

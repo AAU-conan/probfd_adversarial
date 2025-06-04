@@ -219,6 +219,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     }
 
     std::erase_if(transition_tails, [&](auto& transition) {
+        pruning.prune_distribution(mdp, transition.successor_dist.non_source_successor_dist);
         return transition.successor_dist.non_source_successor_dist.empty() || pruning.can_prune_transition(mdp, state, transition);
     });
 
@@ -254,7 +255,8 @@ void HeuristicSearchBase<State, Action, StateInfoT>::
 
     mdp.generate_all_transitions(state, transition_tails);
 
-    std::erase_if(transition_tails, [&](auto& transition) {
+    std::erase_if(transition_tails, [&](TransitionTailType& transition) {
+        pruning.prune_distribution(mdp, transition.successor_dist.non_source_successor_dist);
         return transition.successor_dist.non_source_successor_dist.empty() || pruning.can_prune_transition(mdp, state, transition);
     });
 }
@@ -489,7 +491,9 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
     } while (!queue.empty());
 
 #ifndef NDEBUG
-    this->search_space_drawer->draw_search_space(&*policy);
+    if (this->search_space_drawer) {
+        this->search_space_drawer->draw_search_space(&*policy);
+    }
 #endif
     return policy;
 }

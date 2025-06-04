@@ -101,3 +101,15 @@ create_library(
     TARGET
         probfd_tests
 )
+
+create_library(
+    NAME adversarial_engine_tests
+    HELP "Adversarial engine tests"
+    SOURCES
+        tests/adversarial_engine_tests
+    DEPENDS
+        GTest::gtest
+        test_utils
+    TARGET
+        probfd_tests
+)

@@ -128,7 +128,12 @@ void TaskStateSpace::compute_successor_dist(
         State succ =
             state_registry_.get_successor_state(state, outcome.get_effects());
 
-        if (state == succ) continue;
+        if (state == succ) {
+            // Self-loops are trivially unusable, as the opponent can always choose to go back to the source state.
+            successor_dist.clear();
+            successor_dist.non_source_probability = 0_vt;
+            return;
+        }
 
         for (const auto& h : notify_) {
             OperatorID det_op_id(outcome.get_determinization_id());

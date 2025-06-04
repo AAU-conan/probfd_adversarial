@@ -17,6 +17,12 @@ using namespace probfd::dominance;
     FTSTask fts_task(__VA_ARGS__, std::nullopt); \
     LabelOutcomeMap lom(fts_task);
 
+#define FTSTASK_SP(...) \
+    auto fn = std::make_shared<NoFactNames>(); \
+    auto fvn = std::make_shared<FactValueNames>(fn, -1); \
+    auto fts_task = std::shared_ptr<FTSTask>(new FTSTask(__VA_ARGS__, std::nullopt)); \
+    LabelOutcomeMap lom(*fts_task);
+
 #define LTS(...) \
     LabelledTransitionSystem(__VA_ARGS__, fvn)
 
