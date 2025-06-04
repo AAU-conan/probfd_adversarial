@@ -976,7 +976,7 @@ def parse_task_pddl(
             iterator = prev
             yield None
 
-        metric = pddl.Metric.MINIMIZE
+        metric = pddl.Metric.NONE # Default metric, will translate to minimize with unit cost
         for entry in iterator:
             if isinstance(entry, list) and entry[0] == ":metric":
                 with context.layer("Parsing metric"):

@@ -13,7 +13,14 @@ public:
     bool can_prune_transition(
         StateSpace<State, Action>& state_space,
         ParamType<State> source_state,
-        const TransitionTail<Action>& transition_tail) const override
+        const TransitionTail<Action>& transition_tail) override
+    {
+        return false;
+    }
+
+    bool prune_distribution(
+        StateSpace<State, Action>& state_space,
+        Distribution<StateID>& distribution) override
     {
         return false;
     }

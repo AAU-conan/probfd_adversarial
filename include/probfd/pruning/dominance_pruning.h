@@ -24,16 +24,33 @@ public:
     bool can_prune_transition(
         StateSpace<downward::State, downward::OperatorID>& state_space,
         ParamType<downward::State> source_state,
-        const TransitionTail<downward::OperatorID>& transition_tail) const override
+        const TransitionTail<downward::OperatorID>& transition_tail) override
     {
         // We can prune a transition if any target state is dominated by the source state
         for (const auto& [target_state_id, _] : transition_tail.successor_dist.non_source_successor_dist) {
             auto target_state = state_space.get_state(target_state_id);
             if (dominance_relation->dominates(source_state, target_state)) {
+                ++num_transitions_pruned;
                 return true; // Prune this transition
             }
         }
         return false;
+    }
+
+    bool prune_distribution(
+                StateSpace<downward::State, downward::OperatorID>& state_space,
+                Distribution<StateID>& distribution) override
+    {
+        return distribution.remove_if([&](const ItemProbabilityPair<StateID>& target_state) {
+            // We can prune an outcome if it is dominated by any other state in the distribution
+            for (const auto& [other_state_id, prob] : distribution) {
+                if (target_state.item != other_state_id && dominance_relation->dominates(state_space.get_state(other_state_id), state_space.get_state(target_state.item))) {
+                    ++num_outcomes_pruned;
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 };
 

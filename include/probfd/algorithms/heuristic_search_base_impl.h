@@ -33,7 +33,6 @@ inline void Statistics::print(std::ostream& out) const
         << std::endl;
     out << "  Evaluated state(s): " << evaluated_states << std::endl;
     out << "  Pruned state(s): " << pruned_states << std::endl;
-    out << "  Pruned transition(s): " << pruned_transitions << std::endl;
     out << "  Goal state(s): " << goal_states << std::endl;
     out << "  Terminal state(s): " << terminal_states << std::endl;
     out << "  Self-loop state(s): " << self_loop_states << std::endl;

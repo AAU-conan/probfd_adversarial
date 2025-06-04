@@ -239,6 +239,8 @@ public:
 
             heuristic->print_statistics();
 
+            pruning_method->print_statistics();
+
             return policy != nullptr;
         } catch (TimeoutException&) {
             std::cout << "Time limit reached. Analysis was aborted."

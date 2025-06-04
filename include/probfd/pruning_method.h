@@ -1,8 +1,11 @@
 #ifndef PRUNING_METHOD_H
 #define PRUNING_METHOD_H
 
+#include "distribution.h"
 #include "probfd/aliases.h"
 #include "state_space.h"
+
+#include <print>
 
 namespace probfd {
 
@@ -18,6 +21,9 @@ struct TransitionTail;
  */
 template <typename State, typename Action>
 class PruningMethod {
+protected:
+    size_t num_transitions_pruned = 0;
+    size_t num_outcomes_pruned = 0;
 public:
     virtual ~PruningMethod() = default;
 
@@ -28,13 +34,24 @@ public:
      virtual bool can_prune_transition(
                 StateSpace<State, Action>& state_space,
                 ParamType<State> source_state,
-                const TransitionTail<Action>& transition_tail) const = 0;
+                const TransitionTail<Action>& transition_tail) = 0;
+
+    /**
+     * @brief Checks whether a target state can be pruned based on other target states.
+     */
+    virtual bool prune_distribution(
+                StateSpace<State, Action>& state_space,
+                Distribution<StateID>& distribution) = 0;
 
     /**
      * @brief Prints statistics, e.g. the number of queries made to the
      * interface.
      */
-    virtual void print_statistics() const {}
+    virtual void print_statistics() const
+    {
+        std::println("  Pruned transition(s): {}", num_transitions_pruned);
+        std::println("  Pruned outcome(s): {}", num_outcomes_pruned);
+    }
 };
 
 } // namespace probfd

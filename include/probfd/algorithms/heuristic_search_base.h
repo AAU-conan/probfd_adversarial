@@ -55,7 +55,6 @@ namespace internal {
 struct Statistics {
     unsigned long long evaluated_states = 0;
     unsigned long long pruned_states = 0;
-    unsigned long long pruned_transitions = 0;
     unsigned long long goal_states = 0;
 
     unsigned long long expanded_states = 0;
