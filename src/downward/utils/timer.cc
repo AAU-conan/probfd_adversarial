@@ -127,6 +127,6 @@ ostream& operator<<(ostream& os, const Timer& timer)
     return os;
 }
 
-Timer g_search_timer(true);
+Timer g_search_timer(false);
 Timer g_timer;
 } // namespace utils

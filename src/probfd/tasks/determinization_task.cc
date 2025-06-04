@@ -10,16 +10,24 @@ using namespace downward;
 
 namespace probfd::tasks {
 
-DeterminizationTask::DeterminizationTask(
-    std::shared_ptr<ProbabilisticTask> parent_task)
+DeterminizationTask::DeterminizationTask(std::shared_ptr<ProbabilisticTask> parent_task, OutcomeType outcomes)
     : parent_task_(std::move(parent_task))
 {
     ProbabilisticTaskProxy proxy(*parent_task_);
 
     for (ProbabilisticOperatorProxy op_proxy : proxy.get_operators()) {
-        const int num_outcomes = op_proxy.get_outcomes().size();
-        for (int j = 0; j != num_outcomes; ++j) {
-            det_to_prob_index_.emplace_back(op_proxy.get_id(), j);
+        if (outcomes == ALL_OUTCOMES) {
+            const int num_outcomes = op_proxy.get_outcomes().size();
+            for (int j = 0; j != num_outcomes; ++j) {
+                det_to_prob_index_.emplace_back(op_proxy.get_id(), j);
+            }
+        } else if (outcomes == SINGLE_OUTCOME) {
+            // Only consider the first outcome of each operator
+            if (op_proxy.get_outcomes().size() > 0) {
+                det_to_prob_index_.emplace_back(op_proxy.get_id(), 0);
+            }
+        } else {
+            ABORT("Unknown outcome type for determinization task.");
         }
     }
 }
