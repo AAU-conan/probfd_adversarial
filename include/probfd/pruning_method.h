@@ -31,17 +31,17 @@ public:
      * @brief Checks whether a transition can be pruned based on the source state,
      * action, and target state.
      */
-     virtual bool can_prune_transition(
-                StateSpace<State, Action>& state_space,
-                ParamType<State> source_state,
-                const TransitionTail<Action>& transition_tail) = 0;
+     virtual void prune_transitions(
+        StateSpace<State, Action>& state_space,
+        ParamType<State> source_state,
+        std::vector<TransitionTail<Action>>& transition_tails) = 0;
 
     /**
      * @brief Checks whether a target state can be pruned based on other target states.
      */
-    virtual bool prune_distribution(
-                StateSpace<State, Action>& state_space,
-                Distribution<StateID>& distribution) = 0;
+    virtual void prune_distribution(
+         StateSpace<State, Action>& state_space,
+         Distribution<StateID>& distribution) = 0;
 
     /**
      * @brief Prints statistics, e.g. the number of queries made to the

@@ -218,9 +218,10 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
         return;
     }
 
+    pruning.prune_transitions(mdp, state, transition_tails);
     std::erase_if(transition_tails, [&](auto& transition) {
         pruning.prune_distribution(mdp, transition.successor_dist.non_source_successor_dist);
-        return transition.successor_dist.non_source_successor_dist.empty() || pruning.can_prune_transition(mdp, state, transition);
+        return transition.successor_dist.non_source_successor_dist.empty();
     });
 
     if (transition_tails.empty()) {
@@ -254,10 +255,10 @@ void HeuristicSearchBase<State, Action, StateInfoT>::
     assert(transition_tails.empty());
 
     mdp.generate_all_transitions(state, transition_tails);
-
+    pruning.prune_transitions(mdp, state, transition_tails);
     std::erase_if(transition_tails, [&](TransitionTailType& transition) {
         pruning.prune_distribution(mdp, transition.successor_dist.non_source_successor_dist);
-        return transition.successor_dist.non_source_successor_dist.empty() || pruning.can_prune_transition(mdp, state, transition);
+        return transition.successor_dist.non_source_successor_dist.empty();
     });
 }
 

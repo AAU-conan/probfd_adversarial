@@ -17,34 +17,70 @@ class DominancePruning final : public PruningMethod<downward::State, downward::O
     std::shared_ptr<StateDominanceRelation> dominance_relation;
 
 public:
-    explicit DominancePruning(std::shared_ptr<StateDominanceRelation> dominance_relation)
+    explicit DominancePruning(
+        std::shared_ptr<StateDominanceRelation> dominance_relation)
         : dominance_relation(std::move(dominance_relation))
-    {}
+    {
+    }
 
-    bool can_prune_transition(
+    void prune_transitions(
         StateSpace<downward::State, downward::OperatorID>& state_space,
         ParamType<downward::State> source_state,
-        const TransitionTail<downward::OperatorID>& transition_tail) override
+        std::vector<TransitionTail<downward::OperatorID>>& transition_tails)
+        override
     {
-        // We can prune a transition if any target state is dominated by the source state
-        for (const auto& [target_state_id, _] : transition_tail.successor_dist.non_source_successor_dist) {
-            auto target_state = state_space.get_state(target_state_id);
-            if (dominance_relation->dominates(source_state, target_state)) {
+        // We can prune a transition if any target state is dominated by the
+        // source state, or if there is another transition s.t. for each target
+        // of that transition there is a target of this transition that
+        // dominates it.
+        std::ranges::remove_if( transition_tails,
+        [&](TransitionTail<downward::OperatorID>& tail) {
+            if (std::ranges::any_of(
+                    tail.successor_dist.non_source_successor_dist,
+                    [&](const ItemProbabilityPair<StateID>& target) {
+                        auto target_state = state_space.get_state(target.item);
+                        return dominance_relation->dominates(source_state, target_state);
+                    })) {
                 ++num_transitions_pruned;
                 return true; // Prune this transition
             }
-        }
-        return false;
+            if (std::ranges::any_of(
+            transition_tails,
+            [&](const TransitionTail<downward::OperatorID>& other_tail) {
+                if (other_tail.action == tail.action) {
+                    return false; // Skip the current tail
+                }
+                return std::ranges::all_of(
+                    other_tail.successor_dist.non_source_successor_dist,
+                    [&](const ItemProbabilityPair<StateID>& target_state_pair) {
+                        const auto target_state = state_space.get_state(target_state_pair.item);
+
+                        return std::ranges::any_of(
+                            tail.successor_dist.non_source_successor_dist,
+                            [&](const ItemProbabilityPair<StateID>& other_target_state_pair) {
+                                const auto other_target_state = state_space.get_state(other_target_state_pair.item);
+
+                                return dominance_relation->dominates(
+                                    other_target_state, target_state);
+                            });
+                    });
+            })) {
+                ++num_transitions_pruned;
+                return true; // Prune this transition
+            }
+            return false;
+        });
     }
 
-    bool prune_distribution(
-                StateSpace<downward::State, downward::OperatorID>& state_space,
-                Distribution<StateID>& distribution) override
+    void prune_distribution(
+        StateSpace<downward::State, downward::OperatorID>& state_space,
+        Distribution<StateID>& distribution) override
     {
-        return distribution.remove_if([&](const ItemProbabilityPair<StateID>& target_state) {
-            // We can prune an outcome if it is dominated by any other state in the distribution
-            for (const auto& [other_state_id, prob] : distribution) {
-                if (target_state.item != other_state_id && dominance_relation->dominates(state_space.get_state(other_state_id), state_space.get_state(target_state.item))) {
+        distribution.remove_if([&](const ItemProbabilityPair<StateID>& target_state) {
+            // We can prune an outcome if it DOMINATES any other state in the distribution
+            // The max-player will never choose this outcome, because the other is worse
+            for (const auto& [other_state_id, _] : distribution) {
+                if (target_state.item != other_state_id && dominance_relation->dominates(state_space.get_state(target_state.item), state_space.get_state(other_state_id))) {
                     ++num_outcomes_pruned;
                     return true;
                 }

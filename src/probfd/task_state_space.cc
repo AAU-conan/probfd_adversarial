@@ -129,7 +129,7 @@ void TaskStateSpace::compute_successor_dist(
             state_registry_.get_successor_state(state, outcome.get_effects());
 
         if (state == succ) {
-            // Self-loops are trivially unusable, as the opponent can always choose to go back to the source state.
+            // Transitions with self-loops are trivially unusable, as the opponent can always choose to go back to the source state.
             successor_dist.clear();
             successor_dist.non_source_probability = 0_vt;
             return;
