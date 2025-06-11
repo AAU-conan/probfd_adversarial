@@ -30,6 +30,7 @@ if [[ "$SCRIPT_DIR/ApptainerBaseRun" -nt "$SCRIPT_DIR/base_run.img" ]]; then
 fi
 
 CONTAINER_PROJECT_ROOT="/probfd"
+OUTPUT_FILE="$PROJECT_NAME-$SHORT.img"
 
 # Build the apptainer image if the definition file has changed
 sudo singularity build $CPLEX_BIND\
@@ -38,4 +39,6 @@ sudo singularity build $CPLEX_BIND\
     --bind "$PROJECT_ROOT/include:$CONTAINER_PROJECT_ROOT/include" \
     --bind "$PROJECT_ROOT/builds/singularity_builds:$CONTAINER_PROJECT_ROOT/builds" \
     --bind "$PROJECT_ROOT/bin/singularity_builds:$CONTAINER_PROJECT_ROOT/bin" \
-    "$PROJECT_NAME-$SHORT.img" "$SCRIPT_DIR/$APPTAINER_FILE"
+    "$OUTPUT_FILE" "$SCRIPT_DIR/$APPTAINER_FILE"
+
+echo $OUTPUT_FILE

@@ -32,9 +32,8 @@ public:
         override
     {
         // We can prune a transition if any target state is dominated by the
-        // source state, or if there is another transition s.t. for each target
-        // of that transition there is a target of this transition that
-        // dominates it.
+        // source state, or if there is another transition s.t. all targes of that
+        // transitions dominate a target of the current transition.
         std::ranges::remove_if( transition_tails,
         [&](TransitionTail<downward::OperatorID>& tail) {
             if (std::ranges::any_of(
@@ -54,18 +53,23 @@ public:
                     return false; // Skip the current tail
                 }
                 // Dominates if it has at least one target and all targets dominate a target of tail
+                std::println("Checking other transition {} --{}-->", source_state.get_id().get_value(), action_name(source_state.get_task(), other_tail.action));
                 bool dominates = !other_tail.successor_dist.non_source_successor_dist.empty() && std::ranges::all_of(
                     other_tail.successor_dist.non_source_successor_dist,
-                    [&](const ItemProbabilityPair<StateID>& target_state_pair) {
-                        const auto target_state = state_space.get_state(target_state_pair.item);
+                    [&](const ItemProbabilityPair<StateID>& other_target_state_pair) {
+                        const auto other_target_state = state_space.get_state(other_target_state_pair.item);
 
+                        std::println("Checking target {}", other_target_state.get_id().get_value());
                         return std::ranges::any_of(
                             tail.successor_dist.non_source_successor_dist,
-                            [&](const ItemProbabilityPair<StateID>& other_target_state_pair) {
-                                const auto other_target_state = state_space.get_state(other_target_state_pair.item);
+                            [&](const ItemProbabilityPair<StateID>& this_target_state_pair) {
+                                const auto this_targe_state = state_space.get_state(this_target_state_pair.item);
 
-                                return dominance_relation->dominates(
-                                    other_target_state, target_state);
+                                bool res = dominance_relation->dominates( other_target_state, this_targe_state);
+                                if (res) {
+                                    std::println("Target {} dominates {}", this_targe_state.get_id().get_value(), other_target_state.get_id().get_value());
+                                }
+                                return res;
                             });
                     });
                 if (dominates) {
