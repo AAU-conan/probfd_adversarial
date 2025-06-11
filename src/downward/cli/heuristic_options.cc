@@ -7,6 +7,7 @@
 #include "downward/utils/logging.h"
 
 #include "downward/tasks/root_task.h"
+#include "probfd/tasks/determinization_task.h"
 
 using namespace std;
 

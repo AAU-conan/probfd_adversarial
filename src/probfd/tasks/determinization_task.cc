@@ -1,5 +1,7 @@
 #include "probfd/tasks/determinization_task.h"
 
+#include "downward/cli/plugins/plugin.h"
+#include "downward/utils/rng.h"
 #include "probfd/probabilistic_task.h"
 
 #include "probfd/task_proxy.h"
@@ -11,9 +13,10 @@ using namespace downward;
 namespace probfd::tasks {
 
 DeterminizationTask::DeterminizationTask(std::shared_ptr<ProbabilisticTask> parent_task, OutcomeType outcomes)
-    : parent_task_(std::move(parent_task))
+    : parent_task_(std::move(parent_task)), outcome_determinization(outcomes)
 {
     ProbabilisticTaskProxy proxy(*parent_task_);
+    utils::RandomNumberGenerator rng;
 
     for (ProbabilisticOperatorProxy op_proxy : proxy.get_operators()) {
         if (outcomes == ALL_OUTCOMES) {
@@ -21,10 +24,21 @@ DeterminizationTask::DeterminizationTask(std::shared_ptr<ProbabilisticTask> pare
             for (int j = 0; j != num_outcomes; ++j) {
                 det_to_prob_index_.emplace_back(op_proxy.get_id(), j);
             }
-        } else if (outcomes == SINGLE_OUTCOME) {
+        } else if (outcomes == FIRST_OUTCOME) {
             // Only consider the first outcome of each operator
             if (op_proxy.get_outcomes().size() > 0) {
                 det_to_prob_index_.emplace_back(op_proxy.get_id(), 0);
+            }
+        } else if (outcomes == LAST_OUTCOME) {
+            // Only consider the last outcome of each operator
+            if (op_proxy.get_outcomes().size() > 0) {
+                det_to_prob_index_.emplace_back( op_proxy.get_id(), op_proxy.get_outcomes().size() - 1);
+            }
+        } else if (outcomes == RANDOM_SINGLE_OUTCOME) {
+            // Randomly select one outcome from each operator
+            if (op_proxy.get_outcomes().size() > 0) {
+                int random_index = rng.random(op_proxy.get_outcomes().size());
+                det_to_prob_index_.emplace_back(op_proxy.get_id(), random_index);
             }
         } else {
             ABORT("Unknown outcome type for determinization task.");
@@ -205,5 +219,11 @@ DeterminizationTask::get_parent_indices(int deterministic_operator_index) const
 {
     return det_to_prob_index_[deterministic_operator_index];
 }
+
+cli::plugins::TypedEnumPlugin<DeterminizationTask::OutcomeType> _enum_plugin(
+    {{"all_outcomes", "All outcomes of the probabilistic operators are included in the determinization task."},
+        {"first_outcome", "Only the first outcome of each probabilistic operator is included in the determinization task."},
+        {"last_outcome", "Only the last outcome of each probabilistic operator is included in the determinization task."},
+        {"random_single_outcome", "Only a single outcome of each probabilistic operator is included in the determinization task, chosen randomly."}});
 
 } // namespace probfd::tasks

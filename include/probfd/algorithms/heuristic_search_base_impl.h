@@ -218,9 +218,21 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
         return;
     }
 
-    pruning.prune_transitions(mdp, state, transition_tails);
+    // Remove transitions that have no target states
     std::erase_if(transition_tails, [&](auto& transition) {
-        pruning.prune_distribution(mdp, transition.successor_dist.non_source_successor_dist);
+        return transition.successor_dist.non_source_successor_dist.empty();
+    });
+
+    // Prune transitions
+    pruning.prune_transitions(mdp, state, transition_tails);
+
+    // Prune targes of transitions
+    for (auto& transition : transition_tails) {
+        pruning.prune_distribution( mdp, transition.successor_dist.non_source_successor_dist);
+    }
+
+    // Remove transitions that have no target states after pruning
+    std::erase_if(transition_tails, [&](auto& transition) {
         return transition.successor_dist.non_source_successor_dist.empty();
     });
 
@@ -255,9 +267,22 @@ void HeuristicSearchBase<State, Action, StateInfoT>::
     assert(transition_tails.empty());
 
     mdp.generate_all_transitions(state, transition_tails);
+
+    // Remove transitions that have no target states
+    std::erase_if(transition_tails, [&](auto& transition) {
+        return transition.successor_dist.non_source_successor_dist.empty();
+    });
+
+    // Prune transitions
     pruning.prune_transitions(mdp, state, transition_tails);
-    std::erase_if(transition_tails, [&](TransitionTailType& transition) {
-        pruning.prune_distribution(mdp, transition.successor_dist.non_source_successor_dist);
+
+    // Prune targes of transitions
+    for (auto& transition : transition_tails) {
+        pruning.prune_distribution( mdp, transition.successor_dist.non_source_successor_dist);
+    }
+
+    // Remove transitions that have no target states after pruning
+    std::erase_if(transition_tails, [&](auto& transition) {
         return transition.successor_dist.non_source_successor_dist.empty();
     });
 }

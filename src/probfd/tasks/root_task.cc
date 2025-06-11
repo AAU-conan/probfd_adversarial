@@ -871,7 +871,7 @@ read_sas_task(const std::filesystem::path& filepath)
 std::shared_ptr<ProbabilisticTask> read_root_tasks(std::istream& in)
 {
     std::shared_ptr<ProbabilisticTask> input_task = read_sas_task(in);
-    ::tasks::g_root_task = std::make_shared<DeterminizationTask>(input_task, DeterminizationTask::SINGLE_OUTCOME);
+    ::tasks::g_root_task = std::make_shared<DeterminizationTask>(input_task);
     return input_task;
 }
 

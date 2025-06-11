@@ -59,7 +59,7 @@ namespace probfd {
 
         for (const auto& [id, state] : id_to_state) {
             state.unpack();
-            std::string label = state_name(state.get_unpacked_values());
+            std::string label = std::format("{}: {}", id, state_name(state.get_unpacked_values()));
 
             auto decision = policy? policy->get_decision(state): std::nullopt;
             if (decision.has_value()) {

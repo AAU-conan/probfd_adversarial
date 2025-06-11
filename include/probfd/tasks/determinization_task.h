@@ -30,11 +30,15 @@ class DeterminizationTask final : public downward::AbstractTask {
     std::vector<std::pair<int, int>> det_to_prob_index_;
 
 public:
-
     enum OutcomeType {
         ALL_OUTCOMES, // All outcomes of the probabilistic operators are considered
-        SINGLE_OUTCOME // Only a single outcome is considered
+        FIRST_OUTCOME, // Only the first outcome is considered
+        LAST_OUTCOME, // Only the last outcome is considered
+        RANDOM_SINGLE_OUTCOME // A single outcome is chosen randomly
     };
+
+    const OutcomeType outcome_determinization;
+
     /// Constructs the all-outcomes determinization of the input probabilistic
     /// planning task.
     explicit DeterminizationTask(std::shared_ptr<ProbabilisticTask> parent_task, OutcomeType outcomes = ALL_OUTCOMES);
@@ -102,6 +106,11 @@ public:
     downward::FactPair get_goal_fact(int index) const final;
 
     std::vector<int> get_initial_state_values() const final;
+
+    std::shared_ptr<ProbabilisticTask> get_parent_task() const
+    {
+        return parent_task_;
+    }
 
 private:
     std::pair<int, int>
