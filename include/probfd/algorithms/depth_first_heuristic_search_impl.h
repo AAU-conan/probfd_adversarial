@@ -107,7 +107,7 @@ void HeuristicDepthFirstSearch<State, Action, UseInterval>::
                     value_iteration(mdp, pruning, visited_states_, timer);
 
 #ifndef NDEBUG
-        if (this->search_space_drawer) this->search_space_drawer->draw_search_space();
+        // if (this->search_space_drawer) this->search_space_drawer->draw_search_space();
 #endif
         visited_states_.clear();
         ++statistics_.iterations;

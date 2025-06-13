@@ -100,6 +100,7 @@ void CartesianAbstraction::generate_all_transitions(
 
 void CartesianAbstraction::generate_all_transitions(
     int state,
+    PruningType& pruning,
     std::vector<TransitionTailType>& transitions)
 {
     for (const auto* t :

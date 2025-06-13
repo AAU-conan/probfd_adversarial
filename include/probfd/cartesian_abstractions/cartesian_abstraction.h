@@ -85,6 +85,7 @@ public:
 
     void generate_all_transitions(
         int state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) override;
 
     bool is_goal(int state) const override;

@@ -193,6 +193,7 @@ void BisimilarStateSpace::generate_all_transitions(
 
 void BisimilarStateSpace::generate_all_transitions(
     QuotientState state,
+    PruningType& pruning,
     std::vector<TransitionTailType>& transitions)
 {
     const ProbabilisticOperatorsProxy operators(*task_);

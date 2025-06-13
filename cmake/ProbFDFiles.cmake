@@ -17,6 +17,7 @@ create_library(
         # MDP interfaces
         probfd/cost_function
         probfd/caching_task_state_space
+        probfd/transition_caching_task_state_space
         probfd/task_state_space
         probfd/progress_report
         probfd/quotient_system

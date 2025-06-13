@@ -5,6 +5,7 @@
 
 #include "probfd/heuristic.h"
 #include "probfd/mdp.h"
+#include "probfd/pruning/no_pruning.h"
 #include "probfd/transition_tail.h"
 
 #include <cassert>
@@ -320,6 +321,8 @@ void dump_state_space_dot_graph(
     std::deque<SearchInfo> open;
     open.emplace_back(istateid, initial_state, &builder.get_node(istateid));
 
+    pruning::NoPruningMethod<State, Action> pruning;
+
     do {
         auto& s = open.front();
 
@@ -348,7 +351,7 @@ void dump_state_space_dot_graph(
         }
 
         std::vector<TransitionTail<Action>> transitions;
-        mdp->generate_all_transitions(state, transitions);
+        mdp->generate_all_transitions(state, pruning, transitions);
 
         std::ranges::sort(
             transitions,

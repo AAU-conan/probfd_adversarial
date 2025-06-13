@@ -73,6 +73,7 @@ public:
 
     void generate_all_transitions(
         const downward::State& state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) final;
 
     void print_statistics(std::ostream& out) const final;

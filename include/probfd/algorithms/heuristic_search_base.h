@@ -143,6 +143,7 @@ protected:
     template <fret::QuotientHeuristicSearchAlgorithm>
     friend class fret::ValueGraph;
 
+    std::unordered_map<StateID, TransitionTailType> transition_tail_cache;
 private:
     // Algorithm parameters
     const std::shared_ptr<PolicyPickerType> policy_chooser_;

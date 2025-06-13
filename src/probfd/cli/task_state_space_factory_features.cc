@@ -4,6 +4,7 @@
 #include "downward/cli/plugins/plugin.h"
 
 #include "probfd/task_state_space_factory.h"
+#include "probfd/transition_caching_task_state_space.h"
 
 using namespace probfd;
 using namespace downward;
@@ -48,6 +49,27 @@ public:
         std::shared_ptr<FDRCostFunction>) override
     {
         return std::make_unique<CachingTaskStateSpace>(
+            task,
+            std::move(path_dependent_evaluators));
+    }
+};
+
+
+class TransitionCachingTaskStateSpaceFactory : public TaskStateSpaceFactory {
+    std::vector<std::shared_ptr<Evaluator>> path_dependent_evaluators;
+
+public:
+    TransitionCachingTaskStateSpaceFactory(
+        std::vector<std::shared_ptr<Evaluator>> path_dependent_evaluators)
+        : path_dependent_evaluators(std::move(path_dependent_evaluators))
+    {
+    }
+
+    std::unique_ptr<TaskStateSpace> create_state_space(
+        std::shared_ptr<ProbabilisticTask> task,
+        std::shared_ptr<FDRCostFunction>) override
+    {
+        return std::make_unique<TransitionCachingTaskStateSpace>(
             task,
             std::move(path_dependent_evaluators));
     }
@@ -102,7 +124,34 @@ public:
     }
 };
 
+
+class TransitionCachingTaskStateSpaceFactoryFeature
+    : public TypedFeature<TaskStateSpaceFactory, TransitionCachingTaskStateSpaceFactory> {
+public:
+    TransitionCachingTaskStateSpaceFactoryFeature()
+        : TypedFeature("transition_caching_state_space")
+    {
+        document_synopsis(
+            "Task state space implementation with transition tail cache.");
+        add_list_option<std::shared_ptr<Evaluator>>(
+            "path_dependent_evaluators",
+            "A list of path-dependent classical planning evaluators to inform "
+            "of "
+            "new transitions during the search.",
+            "[]");
+    }
+
+    std::shared_ptr<TransitionCachingTaskStateSpaceFactory>
+    create_component(const Options& opts, const Context&) const override
+    {
+        return make_shared_from_arg_tuples<TransitionCachingTaskStateSpaceFactory>(
+            opts.get_list<std::shared_ptr<Evaluator>>(
+                "path_dependent_evaluators"));
+    }
+};
+
 FeaturePlugin<DefaultTaskStateSpaceFactoryFeature> _plugin;
 FeaturePlugin<CachingTaskStateSpaceFactoryFeature> _plugin2;
+FeaturePlugin<TransitionCachingTaskStateSpaceFactoryFeature> _plugin3;
 
 } // namespace

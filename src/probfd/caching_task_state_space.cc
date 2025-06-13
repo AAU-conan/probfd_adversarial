@@ -11,6 +11,7 @@
 #include "downward/evaluator.h"
 #include "downward/operator_id.h"
 #include "downward/task_proxy.h"
+#include "probfd/pruning_method.h"
 
 #include <cassert>
 #include <functional>
@@ -110,6 +111,7 @@ void CachingTaskStateSpace::generate_all_transitions(
 
 void CachingTaskStateSpace::generate_all_transitions(
     const State& state,
+    PruningType& pruning,
     std::vector<TransitionTailType>& transitions)
 {
     const ProbabilisticOperatorsProxy operators = task_proxy_.get_operators();
@@ -132,6 +134,14 @@ void CachingTaskStateSpace::generate_all_transitions(
             successor_dist.add_non_source_probability(
                 succ,
                 outcome.get_probability());
+        }
+
+        // Prune transitions
+        pruning.prune_transitions(*this, state, transitions);
+
+        // Prune targes of transitions
+        for (auto& transition : transitions) {
+            pruning.prune_distribution( *this, transition.successor_dist.non_source_successor_dist);
         }
 
         statistics_.generated_states += num_outcomes;

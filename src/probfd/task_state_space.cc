@@ -8,6 +8,7 @@
 #include "downward/evaluator.h"
 #include "downward/operator_id.h"
 #include "downward/state_id.h"
+#include "probfd/pruning_method.h"
 
 #include <iostream>
 
@@ -84,9 +85,18 @@ void TaskStateSpace::generate_all_transitions(
 
 void TaskStateSpace::generate_all_transitions(
     const State& state,
+    PruningType& pruning,
     std::vector<TransitionTailType>& transitions)
 {
     gen_.generate_transitions(state, transitions, *this);
+
+    // Prune transitions
+    pruning.prune_transitions(*this, state, transitions);
+
+    // Prune targes of transitions
+    for (auto& transition : transitions) {
+        pruning.prune_distribution( *this, transition.successor_dist.non_source_successor_dist);
+    }
 
     ++statistics_.aops_computations;
     ++statistics_.all_transitions_generator_calls;

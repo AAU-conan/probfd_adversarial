@@ -11,6 +11,7 @@
 #include "probfd/transition_tail.h"
 
 #include "downward/utils/rng.h"
+#include "probfd/pruning/no_pruning.h"
 
 #include <cassert>
 #include <deque>
@@ -37,6 +38,8 @@ std::unique_ptr<MultiPolicy<State, Action>> compute_optimal_projection_policy(
     std::vector<std::vector<PredecessorEdge>> predecessors(value_table.size());
     std::vector<StateID> goals;
 
+    pruning::NoPruningMethod<State, Action> pruning;
+
     // Build the greedy policy graph
     while (!open.empty()) {
         StateID s = open.front();
@@ -55,7 +58,7 @@ std::unique_ptr<MultiPolicy<State, Action>> compute_optimal_projection_policy(
 
         // Generate operators...
         std::vector<TransitionTail<Action>> transitions;
-        mdp.generate_all_transitions(state, transitions);
+        mdp.generate_all_transitions(state, pruning, transitions);
 
         // Select the greedy operators and add their successors
         for (const auto& [op, successor_dist] : transitions) {
@@ -116,7 +119,7 @@ std::unique_ptr<MultiPolicy<State, Action>> compute_optimal_projection_policy(
             std::vector<PolicyDecision<Action>> decisions;
 
             std::vector<TransitionTail<Action>> transitions;
-            mdp.generate_all_transitions(pstate, transitions);
+            mdp.generate_all_transitions(pstate, pruning, transitions);
 
             for (const auto& [op, successor_dist] : transitions) {
                 if (successor_dist == sel_successor_dist &&

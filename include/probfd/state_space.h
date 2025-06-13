@@ -1,6 +1,7 @@
 #ifndef PROBFD_STATE_SPACE_H
 #define PROBFD_STATE_SPACE_H
 
+#include "downward/task_proxy.h"
 #include "probfd/state_id.h"
 #include "probfd/type_traits.h"
 
@@ -11,6 +12,8 @@ namespace probfd {
 struct SuccessorDistribution;
 template <typename>
 struct TransitionTail;
+template <typename, typename>
+class PruningMethod;
 } // namespace probfd
 
 namespace probfd {
@@ -43,6 +46,7 @@ template <typename State, typename Action>
 class StateSpace {
 protected:
     using TransitionTailType = TransitionTail<Action>;
+    using PruningType = PruningMethod<State, Action>;
 
 public:
     virtual ~StateSpace() = default;
@@ -87,6 +91,7 @@ public:
      */
     virtual void generate_all_transitions(
         ParamType<State> state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) = 0;
 };
 

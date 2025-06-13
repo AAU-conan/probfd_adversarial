@@ -279,7 +279,7 @@ Interval IDual<State, Action>::solve(
             }
 
             ClearGuard _(transitions);
-            mdp.generate_all_transitions(state, transitions);
+            mdp.generate_all_transitions(state, pruning, transitions);
 
             for (const auto& [action, successor_dist] : transitions) {
                 if (successor_dist.non_source_successor_dist.empty()) continue;

@@ -354,6 +354,7 @@ void QuotientSystem<State, Action>::generate_all_transitions(
 template <typename State, typename Action>
 void QuotientSystem<State, Action>::generate_all_transitions(
     ParamType<QState> state,
+    PruningType& pruning,
     std::vector<QTransitionTail>& transitions)
 {
     std::visit(

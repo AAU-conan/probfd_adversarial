@@ -34,6 +34,7 @@ namespace probfd {
 
 class TaskStateSpace : public FDRStateSpace {
 protected:
+    using PruningType = FDRPruningMethod;
     struct Statistics {
         unsigned long long single_transition_generator_calls = 0;
         unsigned long long all_transitions_generator_calls = 0;
@@ -84,6 +85,7 @@ public:
 
     void generate_all_transitions(
         const downward::State& state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) override;
 
     const downward::State& get_initial_state();

@@ -210,28 +210,8 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     ++statistics_.expanded_states;
     state_info.removed_from_fringe();
 
-    mdp.generate_all_transitions(state, transition_tails);
+    mdp.generate_all_transitions(state, pruning, transition_tails);
 
-    if (transition_tails.empty()) {
-        ++statistics_.terminal_states;
-        state_info.set_terminal();
-        return;
-    }
-
-    // Remove transitions that have no target states
-    std::erase_if(transition_tails, [&](auto& transition) {
-        return transition.successor_dist.non_source_successor_dist.empty();
-    });
-
-    // Prune transitions
-    pruning.prune_transitions(mdp, state, transition_tails);
-
-    // Prune targes of transitions
-    for (auto& transition : transition_tails) {
-        pruning.prune_distribution( mdp, transition.successor_dist.non_source_successor_dist);
-    }
-
-    // Remove transitions that have no target states after pruning
     std::erase_if(transition_tails, [&](auto& transition) {
         return transition.successor_dist.non_source_successor_dist.empty();
     });
@@ -266,20 +246,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::
 {
     assert(transition_tails.empty());
 
-    mdp.generate_all_transitions(state, transition_tails);
-
-    // Remove transitions that have no target states
-    std::erase_if(transition_tails, [&](auto& transition) {
-        return transition.successor_dist.non_source_successor_dist.empty();
-    });
-
-    // Prune transitions
-    pruning.prune_transitions(mdp, state, transition_tails);
-
-    // Prune targes of transitions
-    for (auto& transition : transition_tails) {
-        pruning.prune_distribution( mdp, transition.successor_dist.non_source_successor_dist);
-    }
+    mdp.generate_all_transitions(state, pruning, transition_tails);
 
     // Remove transitions that have no target states after pruning
     std::erase_if(transition_tails, [&](auto& transition) {
@@ -518,7 +485,7 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
 
 #ifndef NDEBUG
     if (this->search_space_drawer) {
-        this->search_space_drawer->draw_search_space(&*policy);
+        // this->search_space_drawer->draw_search_space(&*policy);
     }
 #endif
     return policy;

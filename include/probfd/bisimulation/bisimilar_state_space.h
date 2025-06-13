@@ -78,6 +78,7 @@ public:
 
     void generate_all_transitions(
         QuotientState state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) override;
 
     TerminationInfo get_termination_info(QuotientState state) override;

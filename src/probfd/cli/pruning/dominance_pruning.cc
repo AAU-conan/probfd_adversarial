@@ -24,14 +24,35 @@ public:
             "dominance_analysis",
             "The dominance analysis to be used for pruning.",
             "ld_simulation()");
+
+        add_option<bool>(
+            "init",
+            "Prune transitions where the initial state dominates a target state.",
+            "true");
+        add_option<bool>(
+            "source",
+            "Prune transitions where the source state dominates a target state.",
+            "true");
+        add_option<bool>(
+            "other",
+            "Prune transitions where all target states of another transition dominate a target state.",
+            "true");
+        add_option<bool>(
+            "outcomes",
+            "Prune target state that dominate another target state.",
+            "true");
     }
 
     [[nodiscard]]
     std::shared_ptr<DominancePruningFactory>
     create_component(const Options& opts, const Context&) const override
     {
-        return std::make_shared<DominancePruningFactory>(
-            opts.get<std::shared_ptr<DominanceAnalysis>>("dominance_analysis")
+return std::make_shared<DominancePruningFactory>(
+            opts.get<std::shared_ptr<DominanceAnalysis>>("dominance_analysis"),
+                opts.get<bool>("init"),
+                opts.get<bool>("source"),
+                opts.get<bool>("other"),
+                opts.get<bool>("outcomes")
         );
     }
 };

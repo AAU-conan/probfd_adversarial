@@ -59,6 +59,7 @@ public:
 
     void generate_all_transitions(
         StateRank state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) override;
 
     [[nodiscard]]

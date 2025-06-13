@@ -151,6 +151,7 @@ public:
 
     void generate_all_transitions(
         int state,
+        PruningType& pruning,
         std::vector<TransitionTailType>& transitions) override
     {
         transitions.reserve(transitions_[state].size());
