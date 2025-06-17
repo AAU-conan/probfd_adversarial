@@ -39,7 +39,7 @@ TEST(DominanceLabelOutcomeRelationTests, dominance_label_dominance_cost_respecti
                 TR(0_s, 0_l, {1_s}),
                 TR(0_s, 1_l, {1_s}),
             }, {}, 0_s),
-            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 0_l, {0_s})}, {}, 0_s)
+            LTS({TR(0_s, 0_l, {0_s}), TR(0_s, 0_l, {0_s})}, {}, 0_s)
         },
         COSTS(1, 2),
         OUTCOMES(1, 1)

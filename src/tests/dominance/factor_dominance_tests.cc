@@ -65,7 +65,7 @@ TEST(DominanceFactorDominanceTests, simple_two_outcome_label_dominance)
                 TR(0_s, 0_l, {2_s, 3_s}),
                 TR(1_s, 1_l, {3_s})
             }, {3_s}, 0_s),
-            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 0_l, {0_s})}, {}, 0_s)
+            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 1_l, {0_s})}, {}, 0_s)
         },
         COSTS(1, 1),
         OUTCOMES(2, 1)
@@ -94,7 +94,7 @@ TEST(DominanceFactorDominanceTests, simple_two_outcome_label_dominance2)
                 TR(0_s, 0_l, {2_s, 3_s}),
                 TR(1_s, 1_l, {3_s})
             }, {2_s}, 0_s),
-            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 0_l, {0_s})}, {}, 0_s)
+            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 1_l, {0_s})}, {}, 0_s)
         },
         COSTS(1, 1),
         OUTCOMES(2, 1)
@@ -123,7 +123,7 @@ TEST(DominanceFactorDominanceTests, simple_two_outcome_label_dominance3)
                 TR(0_s, 0_l, {2_s, 3_s}),
                 TR(1_s, 1_l, {3_s})
             }, {2_s}, 0_s),
-            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 0_l, {0_s})}, {}, 0_s)
+            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 1_l, {0_s})}, {}, 0_s)
         },
         COSTS(1, 1),
         OUTCOMES(2, 1)
@@ -154,7 +154,7 @@ TEST(DominanceFactorDominanceTests, simple_two_outcome_label_dominance4)
                 TR(3_s, 2_l, {3_s}),
                 TR(2_s, 2_l, {2_s})
             }, {2_s}, 0_s),
-            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 0_l, {0_s})}, {}, 0_s)
+            LTS({TR(0_s, 0_l, {0_s, 0_s}), TR(0_s, 1_l, {0_s, 0_s})}, {}, 0_s)
         },
         COSTS(1, 1, 1),
         OUTCOMES(2, 2, 1)

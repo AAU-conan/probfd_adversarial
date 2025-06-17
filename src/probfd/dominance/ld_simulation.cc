@@ -59,6 +59,7 @@ namespace probfd::dominance {
             std::cout << " " << t() << std::flush;
         } while (update_label_relation(*label_relation, task, local_relations, label_outcome_map));
         std::cout << std::endl << "LDSimulation finished: " << t() << std::endl;
+        exit(0);
 
 #ifndef NDEBUG
         for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
@@ -108,27 +109,32 @@ namespace probfd::dominance {
                                 // Checking all transitions of t, we just need to find one. If it returns true, we have found one.
                                 // std::println("      Response {}-({})->{}",lts.state_name(t), lts.label_group_name(trt.label_group), lts.state_names(trt.targets));
                                 const std::vector<Label> &labels_trt = lts.get_labels(trt.label_group);
-                                for (Label label_trt: labels_trt) {
-                                    // std::println("        Checking label {}", lts.label_name(label_trt));
-                                    for (auto [o_t, lo_t] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trt))) {
-                                        // std::println("          Does t-outcome {} simulate s-outome ", o_t);
-                                        for (auto [o_s, lo_s] : std::views::enumerate(label_outcome_map.get_label_outcomes(label_trs))) {
-                                            if (local_relation.simulates(trt.targets.at(o_t), trs.targets.at(o_s)) && label_dominance.label_dominates_label_in_all_other(factor, fts_task, lo_t, lo_s)) {
-                                                // std::println("            {}. Yes", o_s);
-                                                goto ot_good;
-                                            }
-                                            // std::println("            {}. No  {} && {} ", o_s, local_relation.simulates(trt.targets.at(o_t), trs.targets.at(o_s)), label_dominance.label_dominates_label_in_all_other(factor, fts_task, lo_t, lo_s));
+
+                                std::vector<std::vector<long>> s_targets_dominated_by_t_target; // The s-targets dominated by i'th t-target
+                                for (auto [o_t, t2] : std::views::enumerate(trt.targets)) {
+                                    s_targets_dominated_by_t_target.emplace_back();
+                                    for (auto [o_s, s2] : std::views::enumerate(trs.targets)) {
+                                        // std::println("        Checking t-outcome {} simulates s-outcome {}", o_t, o_s);
+                                        if (local_relation.simulates(t2, s2)) {
+                                            s_targets_dominated_by_t_target.back().push_back(o_s);
                                         }
-                                        // No o s.t. o2 dominates o, label_trt doesn't work
-                                        goto label_trt_bad;
-                                        ot_good:;
+                                        // std::println("          No");
                                     }
-                                    // std::println("      Works");
-                                    // label_trt is good
-                                    return true;
-                                    label_trt_bad:;
+                                    if (s_targets_dominated_by_t_target.back().empty()) {
+                                        // No s-targets dominated by t-target, this transition doesn't work
+                                        return false;
+                                    }
                                 }
-                                return false;
+
+                                // Now try and find a label that works for the identified s-targets
+                                return std::ranges::any_of(labels_trt, [&](Label label_trt) {
+                                    return std::ranges::all_of(std::views::iota(0UL, s_targets_dominated_by_t_target.size()), [&](long o_t) {
+                                        return std::ranges::any_of(s_targets_dominated_by_t_target[o_t], [&](long o_s) {
+                                            // std::println("          Checking t-label {} with s-label {}", lts.label_name(label_trt), lts.label_name(labels_trs[o_s]));
+                                            return label_dominance.label_dominates_label_in_all_other(factor, fts_task, label_outcome_map.get_label_outcome(label_trt, o_t), label_outcome_map.get_label_outcome(label_trs, o_s));
+                                        });
+                                    });
+                                });
                             });
                         }
 
