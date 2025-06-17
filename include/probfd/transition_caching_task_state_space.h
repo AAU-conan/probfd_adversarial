@@ -8,23 +8,18 @@
 namespace probfd {
 
 class TransitionCachingTaskStateSpace final : public TaskStateSpace {
-
-    struct CacheEntry {
-        bool is_initialized = false;
-        std::vector<TransitionTailType> transition_tails;
-    };
-
-    downward::PerStateInformation<CacheEntry> cache_;
+    std::unordered_map<StateID, std::vector<TransitionTailType>> cache_;
 
     std::vector<TransitionTailType>&
     lookup(const downward::State& state, PruningType& pruning);
 
+    const size_t max_cache_size;
+
 public:
-    TransitionCachingTaskStateSpace(
-        const std::shared_ptr<ProbabilisticTask>& task,
-        const std::vector<std::shared_ptr<downward::Evaluator>>&
-            path_dependent_evaluators)
-        : TaskStateSpace(std::move(task), std::move(path_dependent_evaluators))
+    TransitionCachingTaskStateSpace( const std::shared_ptr<ProbabilisticTask>& task,
+        const std::vector<std::shared_ptr<downward::Evaluator>>& path_dependent_evaluators,
+        const size_t max_cache_size = 100000)
+        : TaskStateSpace(std::move(task), std::move(path_dependent_evaluators)), max_cache_size(max_cache_size)
     {
     }
 

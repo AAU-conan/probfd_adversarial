@@ -9,15 +9,17 @@ TransitionCachingTaskStateSpace::lookup(
     const downward::State& state,
     PruningType& pruning)
 {
-    CacheEntry& entry = cache_[state];
-    if (!entry.is_initialized) {
+    if (!cache_.contains(state.get_id())) {
+        if (cache_.size() >= max_cache_size) {
+            // If the cache is full, we need to clear it
+            cache_.clear();
+        }
         TaskStateSpace::generate_all_transitions(
             state,
             pruning,
-            entry.transition_tails);
-        entry.is_initialized = true;
+            cache_[state.get_id()]);
     }
-    return entry.transition_tails;
+    return cache_.at(state.get_id());
 }
 
 void TransitionCachingTaskStateSpace::generate_all_transitions(

@@ -57,11 +57,12 @@ public:
 
 class TransitionCachingTaskStateSpaceFactory : public TaskStateSpaceFactory {
     std::vector<std::shared_ptr<Evaluator>> path_dependent_evaluators;
+    size_t max_cache_size;
 
 public:
     TransitionCachingTaskStateSpaceFactory(
-        std::vector<std::shared_ptr<Evaluator>> path_dependent_evaluators)
-        : path_dependent_evaluators(std::move(path_dependent_evaluators))
+        std::vector<std::shared_ptr<Evaluator>> path_dependent_evaluators, size_t max_cache_size)
+        : path_dependent_evaluators(std::move(path_dependent_evaluators)), max_cache_size(max_cache_size)
     {
     }
 
@@ -139,6 +140,9 @@ public:
             "of "
             "new transitions during the search.",
             "[]");
+        add_option<int>("max_cache_size",
+                           "The maximum number of states to cache transitions for.",
+                           "100000");
     }
 
     std::shared_ptr<TransitionCachingTaskStateSpaceFactory>
@@ -146,7 +150,8 @@ public:
     {
         return make_shared_from_arg_tuples<TransitionCachingTaskStateSpaceFactory>(
             opts.get_list<std::shared_ptr<Evaluator>>(
-                "path_dependent_evaluators"));
+                "path_dependent_evaluators"),
+                opts.get<int>("max_cache_size"));
     }
 };
 

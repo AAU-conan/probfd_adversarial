@@ -59,7 +59,6 @@ namespace probfd::dominance {
             std::cout << " " << t() << std::flush;
         } while (update_label_relation(*label_relation, task, local_relations, label_outcome_map));
         std::cout << std::endl << "LDSimulation finished: " << t() << std::endl;
-        exit(0);
 
 #ifndef NDEBUG
         for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
