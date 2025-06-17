@@ -34,3 +34,6 @@ misc/definitions.json
 
 # Translator output
 output.psas
+
+# Singularity image files
+**/*.img
