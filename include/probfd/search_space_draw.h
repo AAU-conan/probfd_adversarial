@@ -39,7 +39,7 @@ namespace probfd {
         ProbabilisticTaskProxy task_proxy;
         std::vector<Edge> edges;
         std::unordered_map<int, downward::State> id_to_state;
-        std::unordered_map<int, value_t> q_values;
+        std::unordered_map<int, Interval> q_values;
 
         std::string output_path;
 
@@ -60,7 +60,11 @@ namespace probfd {
         {
             throw std::runtime_error("Not implemented");
         }
-        void set_q_value(const downward::State &state, value_t value);
+        template <typename Value>
+        void set_q_value(const downward::State& state, Value value) {
+            int id = state_lookup(state);
+            q_values[id] = {algorithms::as_interval(value)};
+        }
 
         template <typename State, typename Action>
         void draw_search_space(const Policy<State, Action>* policy = nullptr)

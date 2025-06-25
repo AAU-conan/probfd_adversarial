@@ -142,6 +142,23 @@ create_library(
         probfd
 )
 
+
+create_library(
+        NAME ldfs_solver_plugin
+        HELP "Enables the learning depth first search solver plugin"
+        SOURCES
+        probfd/cli/solvers/learning_depth_first_search
+        DEPENDS
+        mdp_heuristic_search_base_options
+        probfd_core
+        parser
+        plugins
+        search_space_draw
+        dominance
+        TARGET
+        probfd
+)
+
 create_library(
     NAME exhaustive_ao_star_plugin
     HELP "Enables the exhaustive AO* solver plugin"

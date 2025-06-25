@@ -267,14 +267,6 @@ protected:
 
     void print_statistics(std::ostream& out) const;
 
-private:
-    void initialize(
-        MDPType& mdp,
-        HeuristicType& h,
-        PruningType& pruning,
-        ParamType<State> state,
-        StateInfo& state_info);
-
     AlgorithmValueType compute_qvalue(
         const TransitionTailType& transition_tail,
         CostFunctionType& cost_function) const;
@@ -283,6 +275,15 @@ private:
         std::vector<TransitionTailType>& transition_tails,
         CostFunctionType& cost_function,
         std::vector<AlgorithmValueType>& qvalues) const;
+
+private:
+    void initialize(
+        MDPType& mdp,
+        HeuristicType& h,
+        PruningType& pruning,
+        ParamType<State> state,
+        StateInfo& state_info);
+
 
     AlgorithmValueType filter_greedy_transitions(
         std::vector<TransitionTailType>& transition_tails,

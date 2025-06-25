@@ -35,10 +35,7 @@ namespace probfd {
         edges.push_back({state_lookup(state), successor_state_ids, task_proxy.get_operators()[op]});
     }
 
-    void SearchSpaceDrawer::set_q_value(const downward::State& state, value_t value) {
-        int id = state_lookup(state);
-        q_values[id] = {value};
-    }
+
 
     std::string SearchSpaceDrawer::state_name(const std::vector<int>& state_vector) {
         std::string result;
@@ -77,8 +74,9 @@ namespace probfd {
             }
 
             if (q_values.contains(id)) {
-                auto q_value = q_values[id];
-                state_id_to_node[id] = graph.add_node(label, std::format("xlabel=\"q={}\",{}", q_value == INFINITE_VALUE ? "∞": std::format("{}", q_value), node_attrs));
+                auto lower = q_values[id].lower;
+                auto upper = q_values[id].upper;
+                state_id_to_node[id] = graph.add_node(label, std::format("xlabel=\"q=[{},{}]\",{}", lower == INFINITE_VALUE ? "∞": std::format("{}", lower), upper == INFINITE_VALUE ? "∞": std::format("{}", upper), node_attrs));
             } else {
                 state_id_to_node[id] = graph.add_node(label,  node_attrs);
             }

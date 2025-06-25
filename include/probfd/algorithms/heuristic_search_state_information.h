@@ -145,6 +145,8 @@ struct PerStateBaseInformation
             return Interval(value, INFINITE_VALUE);
         }
     }
+
+    void clear() {}
 };
 
 } // namespace probfd::algorithms::heuristic_search

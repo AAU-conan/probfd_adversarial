@@ -223,10 +223,14 @@ void HeuristicSearchBase<State, Action, StateInfoT>::expand_and_initialize(
     }
 
     for (auto& transition : transition_tails) {
+#ifndef NDEBUG
         std::vector<State> successors;
+#endif
         for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
             auto& succ_info = state_infos_[succ_id];
+#ifndef NDEBUG
             successors.push_back(mdp.get_state(succ_id));
+#endif
             if (succ_info.is_value_initialized()) continue;
             initialize(mdp, h, pruning, mdp.get_state(succ_id), succ_info);
         }

@@ -65,6 +65,11 @@ public:
                  ItemProbabilityPair<T>>)
     Distribution(std::from_range_t, NoNormalizeTagType, R&& pair_range);
 
+    auto items() const
+    {
+        return std::views::transform(distribution_, &ItemProbabilityPair<T>::item);
+    }
+
     /**
      * @brief Reserves space for \p capacity number of elements in
      * the support of the distribution.
