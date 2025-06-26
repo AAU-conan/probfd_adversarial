@@ -34,9 +34,10 @@ inline void Statistics::print(std::ostream& out) const
 } // namespace internal
 
 template <typename State, typename Action>
-LearningDepthFirstSearch<State, Action>::
-    LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser)
+LearningDepthFirstSearch<State, Action>::LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser, bool backtrack_update_upperbound, bool upperbound_update_to_qvalue)
     : Base(epsilon, std::move(policy_chooser))
+    , backtrack_update_upperbound_(backtrack_update_upperbound)
+    , upperbound_update_to_qvalue_(upperbound_update_to_qvalue)
 {
 }
 
@@ -87,10 +88,11 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
     StateInfo* sinfo;
     sinfo = &this->state_infos_[state];
     initialize(mdp, heuristic, pruning, state, *sinfo);
+    SEARCH_SPACE_DRAWER->draw_search_space();
 
     // std::println("Exploring state: {}, V: [{}, {}], bound: {}", state_name(mdp.get_state(state)), sinfo->get_bounds().lower, sinfo->get_bounds().upper, bound);
 
-    if (sinfo->is_goal_or_terminal() || sinfo->get_bounds().lower > bound || sinfo->bounds_approximately_equal(0)) {
+    if (sinfo->is_goal_or_terminal() || sinfo->get_bounds().lower > bound || sinfo->get_bounds().upper <= bound) {
         if (sinfo->is_goal_or_terminal()) {
             this->update_value(*sinfo, Interval(mdp.get_termination_cost(mdp.get_state(state))), this->epsilon);
             SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), Interval(mdp.get_termination_cost(mdp.get_state(state))));
@@ -105,7 +107,9 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
 
     std::vector<TransitionTail<Action>> transition_tails;
     this->generate_non_tip_transitions(mdp, pruning, full_state, transition_tails);
-    for (const auto& tail : transition_tails) {
+    auto tail_it = transition_tails.begin();
+    for (; tail_it != transition_tails.end(); ++tail_it) {
+        auto tail = *tail_it;
         if (this->compute_qvalue(tail, mdp).lower > bound) continue;
         flag = true;
         for (const auto& [succ_id, _] : tail.successor_dist.non_source_successor_dist) {
@@ -122,12 +126,29 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
 
     if (flag) {
         // std::println("State {} solved within bound {}", state_name(full_state), bound);
-        auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transition_tails);
-        this->update_policy(*sinfo, transition);
-        this->update_value(*sinfo, Interval(sinfo->get_bounds().lower, bound), this->epsilon);
+        auto value = this->compute_qvalue(*tail_it, mdp);
+        this->update_policy(*sinfo, *tail_it);
+        if (upperbound_update_to_qvalue_) {
+            this->update_value(*sinfo, value, this->epsilon);
+        } else {
+            this->update_value(*sinfo, Interval(sinfo->get_bounds().lower, bound), this->epsilon);
+        }
     } else {
-        auto value = this->compute_bellman(full_state, transition_tails, mdp);
-        this->update_value(*sinfo, Interval(value.lower, sinfo->get_bounds().upper), this->epsilon);
+        AlgorithmValueType value;
+        if (backtrack_update_upperbound_) {
+            ClearGuard _(qvalues_);
+            value = this->compute_bellman_and_greedy(full_state, transition_tails, mdp, qvalues_);
+            qvalues_.clear();
+            auto result = this->update_value(*sinfo, value, this->epsilon);
+            if (result.converged) {
+                // We found the true value, but outside the bound, update the policy
+                auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transition_tails);
+                this->update_policy(*sinfo, transition);
+            }
+        } else {
+            value = this->compute_bellman(full_state, transition_tails, mdp);
+            this->update_value(*sinfo, Interval(value.lower, sinfo->get_bounds().upper), this->epsilon);
+        }
         SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), value);
         // std::println("State {} not solved within bound {}, new V: [{},{}]", state_name(full_state), bound, sinfo->get_bounds().lower, sinfo->get_bounds().upper);
     }

@@ -77,6 +77,8 @@ private:
     static constexpr uint32_t CLOSED = std::numeric_limits<uint32_t>::max();
 
     // Algorithm parameters
+    const bool backtrack_update_upperbound_;
+    const bool upperbound_update_to_qvalue_;
 
     // Algorithm state
     std::deque<internal::DFSState> dfs_stack_;
@@ -89,7 +91,7 @@ private:
     Statistics statistics_;
 
 public:
-    explicit LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser);
+    explicit LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser, bool backtrack_update_upperbound, bool upperbound_update_to_qvalue);
 
 protected:
     Interval do_solve(
