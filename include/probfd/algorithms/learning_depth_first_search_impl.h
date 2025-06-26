@@ -127,7 +127,7 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
         this->update_value(*sinfo, Interval(sinfo->get_bounds().lower, bound), this->epsilon);
     } else {
         auto value = this->compute_bellman(full_state, transition_tails, mdp);
-        this->update_value(*sinfo, value, this->epsilon);
+        this->update_value(*sinfo, Interval(value.lower, sinfo->get_bounds().upper), this->epsilon);
         SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), value);
         // std::println("State {} not solved within bound {}, new V: [{},{}]", state_name(full_state), bound, sinfo->get_bounds().lower, sinfo->get_bounds().upper);
     }
