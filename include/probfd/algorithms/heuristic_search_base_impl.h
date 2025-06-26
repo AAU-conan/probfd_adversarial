@@ -319,9 +319,7 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_qvalue(
     // Compute the maximum of the successors
     AlgorithmValueType t_value(-INFINITE_VALUE);
     for (const auto& [succ_id, prob] : transition.successor_dist.non_source_successor_dist) {
-        if (state_infos_[succ_id].value > t_value) {
-            t_value = state_infos_[succ_id].value;
-        }
+        set_max(t_value, state_infos_[succ_id].value);
     }
     t_value += AlgorithmValueType(cost_function.get_action_cost(transition.action));
 

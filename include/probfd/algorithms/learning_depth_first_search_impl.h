@@ -12,7 +12,7 @@
 #ifndef NDEBUG
 #define SEARCH_SPACE_DRAWER if (this->search_space_drawer) this->search_space_drawer
 #else
-#define SEARCH_SPACE_DRAWER //
+#define SEARCH_SPACE_DRAWER if (false) this->search_space_drawer
 #endif
 
 
@@ -61,6 +61,8 @@ Interval LearningDepthFirstSearch<State, Action>::do_solve(
     do {
         exploration_recursive(mdp, heuristic, pruning, stateid, state_info.get_bounds().lower, timer);
         SEARCH_SPACE_DRAWER->draw_search_space();
+        ++statistics_.iterations;
+        progress.print();
     } while (state_info.get_bounds().lower < state_info.get_bounds().upper);
 
     return state_info.get_bounds();
@@ -86,17 +88,14 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
     sinfo = &this->state_infos_[state];
     initialize(mdp, heuristic, pruning, state, *sinfo);
 
-    std::println("Exploring state: {}, V: [{}, {}], bound: {}",
-                 state_name(mdp.get_state(state)),
-                 sinfo->get_bounds().lower,
-                 sinfo->get_bounds().upper,
-                 bound);
+    // std::println("Exploring state: {}, V: [{}, {}], bound: {}", state_name(mdp.get_state(state)), sinfo->get_bounds().lower, sinfo->get_bounds().upper, bound);
 
     if (sinfo->is_goal_or_terminal() || sinfo->get_bounds().lower > bound || sinfo->bounds_approximately_equal(0)) {
         if (sinfo->is_goal_or_terminal()) {
             this->update_value(*sinfo, Interval(mdp.get_termination_cost(mdp.get_state(state))), this->epsilon);
             SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), Interval(mdp.get_termination_cost(mdp.get_state(state))));
         }
+        // std::println("State {} is already solved, V: [{}, {}], bound: {}", state_name(mdp.get_state(state)), sinfo->get_bounds().lower, sinfo->get_bounds().upper, bound);
         return true; // State is already solved
     }
 
@@ -122,7 +121,7 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
     }
 
     if (flag) {
-        std::println("State {} solved within bound {}", state_name(full_state), bound);
+        // std::println("State {} solved within bound {}", state_name(full_state), bound);
         auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transition_tails);
         this->update_policy(*sinfo, transition);
         this->update_value(*sinfo, Interval(sinfo->get_bounds().lower, bound), this->epsilon);
@@ -130,8 +129,9 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
         auto value = this->compute_bellman(full_state, transition_tails, mdp);
         this->update_value(*sinfo, value, this->epsilon);
         SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), value);
-        std::println("State {} not solved within bound {}, new V: [{},{}]", state_name(full_state), bound, sinfo->get_bounds().lower, sinfo->get_bounds().upper);
+        // std::println("State {} not solved within bound {}, new V: [{},{}]", state_name(full_state), bound, sinfo->get_bounds().lower, sinfo->get_bounds().upper);
     }
+    ++statistics_.backtracking_updates;
     return flag;
 }
 
@@ -241,42 +241,13 @@ bool LearningDepthFirstSearch<State, Action>::initialize(
 
     if (is_tip_state) {
         ClearGuard _(transitions_, qvalues_);
-
-        if (is_tip_state) {
-            this->expand_and_initialize(
-                mdp,
-                heuristic,
-                pruning,
-                state,
-                sinfo,
-                transitions_);
-        } else {
-            this->generate_non_tip_transitions(
-                mdp,
-                pruning,
-                state,
-                transitions_);
-        }
-
-        statistics_.forward_updates++;
-
-        auto value = this->compute_bellman_and_greedy(
+        this->expand_and_initialize(
+            mdp,
+            heuristic,
+            pruning,
             state,
-            transitions_,
-            mdp,
-            qvalues_);
-
-        auto transition = this->select_greedy_transition(
-            mdp,
-            sinfo.get_policy(),
+            sinfo,
             transitions_);
-
-        const auto val_upd = this->update_value(sinfo, value, this->epsilon);
-        this->update_policy(sinfo, transition);
-
-        if (!transition) {
-            return false;
-        }
     }
     return true;
 }
