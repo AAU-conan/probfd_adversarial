@@ -63,11 +63,11 @@ public:
 
         this->add_option<bool>("backtrack_upperbound",
             "Whether to update the upper bound during backtracking.",
-            "false");
+            "true");
 
         this->add_option<bool>("upperbound_tightening",
             "Whether to update the upper bound to the Q-value of the greedy policy.",
-            "false");
+            "true");
 
         add_base_solver_options_except_algorithm_to_feature(*this);
         add_mdp_hs_options_to_feature<false, false>(*this);
