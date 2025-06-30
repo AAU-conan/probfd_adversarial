@@ -26,7 +26,7 @@ public:
             "ld_simulation()");
 
         add_option<bool>(
-            "init",
+            "_init",
             "Prune transitions where the initial state dominates a target state.",
             "true");
         add_option<bool>(
@@ -49,7 +49,7 @@ public:
     {
 return std::make_shared<DominancePruningFactory>(
             opts.get<std::shared_ptr<DominanceAnalysis>>("dominance_analysis"),
-                opts.get<bool>("init"),
+                opts.get<bool>("_init"),
                 opts.get<bool>("source"),
                 opts.get<bool>("other"),
                 opts.get<bool>("outcomes")

@@ -11,7 +11,7 @@ template <typename State, typename Action>
 class NoPruningMethod final : public PruningMethod<State, Action> {
 public:
     void prune_transitions(
-        StateSpace<State, Action>& state_space,
+        MDP<State, Action>& mdp,
         ParamType<State> source_state,
         std::vector<TransitionTail<Action>>& transition_tail) override
     {

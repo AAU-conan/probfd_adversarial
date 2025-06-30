@@ -42,7 +42,7 @@ public:
     }
 
     void prune_transitions(
-        StateSpace<downward::State, downward::OperatorID>& state_space,
+        MDP<downward::State, downward::OperatorID>& mdp,
         ParamType<downward::State> source_state,
         std::vector<TransitionTail<downward::OperatorID>>& transition_tails)
         override
@@ -60,7 +60,7 @@ public:
                     if (std::ranges::any_of(
                             tail.successor_dist.non_source_successor_dist,
                             [&](const ItemProbabilityPair<StateID>& target) {
-                                auto target_state = state_space.get_state(target.item);
+                                auto target_state = mdp.get_state(target.item);
                                 return dominance_relation->dominates(*initial_state, target_state);
                             })) {
                         // std::println("Pruned transition {} --{}--> because it has a target state that is dominated by the initial state.", source_state.get_id().get_value(), action_name(source_state.get_task(), tail.action));
@@ -72,7 +72,7 @@ public:
                 if (compare_source_state && std::ranges::any_of(
                         tail.successor_dist.non_source_successor_dist,
                         [&](const ItemProbabilityPair<StateID>& target) {
-                            auto target_state = state_space.get_state(target.item);
+                            auto target_state = mdp.get_state(target.item);
                             return dominance_relation->dominates(source_state, target_state);
                         })) {
                     // std::println("Pruned transition {} --{}--> because it has a target state that is dominated by the source state.", source_state.get_id().get_value(), action_name(source_state.get_task(), tail.action));
@@ -88,16 +88,16 @@ public:
                     }
                     // Dominates if it has at least one target and all targets dominate a target of tail
                     // std::println("Checking other transition {} --{}-->", source_state.get_id().get_value(), action_name(source_state.get_task(), other_tail.action));
-                    bool dominates = !other_tail.successor_dist.non_source_successor_dist.empty() && std::ranges::all_of(
+                    bool dominates = mdp.get_action_cost(other_tail.action) <= mdp.get_action_cost(tail.action) && !other_tail.successor_dist.non_source_successor_dist.empty() && std::ranges::all_of(
                         other_tail.successor_dist.non_source_successor_dist,
                         [&](const ItemProbabilityPair<StateID>& other_target_state_pair) {
-                            const auto other_target_state = state_space.get_state(other_target_state_pair.item);
+                            const auto other_target_state = mdp.get_state(other_target_state_pair.item);
 
                             // std::println("Checking target {}", other_target_state.get_id().get_value());
                             return std::ranges::any_of(
                                 tail.successor_dist.non_source_successor_dist,
                                 [&](const ItemProbabilityPair<StateID>& this_target_state_pair) {
-                                    const auto this_targe_state = state_space.get_state(this_target_state_pair.item);
+                                    const auto this_targe_state = mdp.get_state(this_target_state_pair.item);
 
                                     bool res = dominance_relation->dominates( other_target_state, this_targe_state);
                                     // if (res) {

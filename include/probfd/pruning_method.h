@@ -32,7 +32,7 @@ public:
      * action, and target state.
      */
      virtual void prune_transitions(
-        StateSpace<State, Action>& state_space,
+        MDP<State, Action>& mdp,
         ParamType<State> source_state,
         std::vector<TransitionTail<Action>>& transition_tails) = 0;
 
