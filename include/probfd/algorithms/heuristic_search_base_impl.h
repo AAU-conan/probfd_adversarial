@@ -287,7 +287,7 @@ void HeuristicSearchBase<State, Action, StateInfoT>::initialize(
         state_info.set_goal();
         state_info.value = AlgorithmValueType(t_cost);
 #ifndef NDEBUG
-        if (this->search_space_drawer) search_space_drawer->set_q_value(state, state_info.value);
+        if (this->search_space_drawer) search_space_drawer->set_q_value(state, Interval(t_cost));
 #endif
         return;
     }

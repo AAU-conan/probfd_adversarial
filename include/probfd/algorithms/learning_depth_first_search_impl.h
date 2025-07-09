@@ -34,10 +34,11 @@ inline void Statistics::print(std::ostream& out) const
 } // namespace internal
 
 template <typename State, typename Action>
-LearningDepthFirstSearch<State, Action>::LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser, bool backtrack_update_upperbound, bool upperbound_update_to_qvalue)
+LearningDepthFirstSearch<State, Action>::LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser, bool backtrack_update_upperbound, bool upperbound_update_to_qvalue, bool simple)
     : Base(epsilon, std::move(policy_chooser))
     , backtrack_update_upperbound_(backtrack_update_upperbound)
     , upperbound_update_to_qvalue_(upperbound_update_to_qvalue)
+    , simple_(simple)
 {
 }
 
@@ -60,7 +61,11 @@ Interval LearningDepthFirstSearch<State, Action>::do_solve(
     });
 
     do {
-        exploration_recursive(mdp, heuristic, pruning, stateid, state_info.get_bounds().lower, timer);
+        if (simple_) {
+            exploration_simple_recursive(mdp, heuristic, pruning, stateid, state_info.get_bounds().lower, timer);
+        } else {
+            exploration_recursive(mdp, heuristic, pruning, stateid, state_info.get_bounds().lower, timer);
+        }
         SEARCH_SPACE_DRAWER->draw_search_space();
         ++statistics_.iterations;
         progress.print();
@@ -158,93 +163,200 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
 
 
 
-// template <typename State, typename Action>
-// bool LearningDepthFirstSearch<State, Action>::policy_exploration(
-//     MDP& mdp,
-//     HeuristicType& heuristic,
-//     PruningType& pruning,
-//     StateID state,
-//     downward::utils::CountdownTimer& timer)
-// {
-//     StateInfo* sinfo;
-//     sinfo = &this->state_infos_[state];
-//     initialize(mdp, heuristic, pruning, state, *sinfo);
-//
-//     push( state, sinfo->get_bounds().lower, nullptr, internal::DFSState::Status::NEW); // Put initial state on the top of the stack
-//
-//     do {
-//         auto& [current, bound, parent, status, flag] = dfs_stack_.back();
-//         sinfo = &this->state_infos_[current];
-//
-//         using Status = internal::DFSState::Status;
-//         if (status == Status::TIP_LAST || status == Status::TIP_NOT_LAST) {
-//             // This state is a tip, i.e. not handled, make it active
-//             status = (status == Status::TIP_LAST) ? Status::ACTIVE_LAST : Status::ACTIVE_NOT_LAST;
-//
-//             // Initialize the exploration state, if it is not already initialized
-//             initialize(mdp, heuristic, pruning, current, *sinfo);
-//
-//             if (sinfo->is_goal_or_terminal() || sinfo->bounds_approximately_equal(0)) {
-//                 assert(sinfo->get_bounds().bounds_approximately_equal(0));
-//                 // State is already solved
-//                 flag = true;
-//             } else {
-//                 flag = false;
-//
-//                 ClearGuard _(transitions_, qvalues_);
-//                 this->generate_non_tip_transitions(mdp, pruning, state, transitions_);
-//                 this->compute_q_values(transitions_, mdp, qvalues_);
-//
-//                 for (int i = 0; i < transitions_.size(); ++i) {
-//                     if (qvalues_[i] > bound) continue;
-//                     bool first = true;
-//                     for (const auto& [succ_id, _] : transitions_[i].successor_dist.non_source_successor_dist) {
-//                         // If this is the first successor, it is the last tip
-//                         push (succ_id, bound - mdp.get_action_cost(transitions_[i].action), &dfs_stack_.back(), first ? Status::TIP_LAST : Status::TIP_NOT_LAST);
-//                         first = false;
-//                     }
-//                 }
-//             }
-//         } else {
-//             // All children of this state have been processed
-//
-//             auto value = this->compute_bellman_and_greedy(state, transitions_, mdp, qvalues_);
-//             flag &= value <= bound; // Check if we solved this state within bound
-//
-//             // Update
-//             if (flag) {
-//                 auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transitions_);
-//                 this->update_policy(*sinfo, transition);
-//             }
-//             this->update_value(*sinfo, value, this->epsilon);
-//
-//             parent->flag &= flag; // Propagate the solved flag to the parent
-//
-//             if (status == Status::ACTIVE_LAST) {
-//                 // This is the last child of the parent, so we need to check if we solved
-//                 if (flag) {
-//                     // We solved, discard all other children. This invalidates out own DFSState variables!
-//                     do {
-//                         dfs_stack_.pop_back();
-//                     } while (&dfs_stack_.back() != parent);
-//                 } else {
-//                     // We did not solve, so we reset the parent flag to true
-//                 }
-//             }
-//
-//         }
-//     } while (!dfs_stack_.empty());
-//
-//
-//
-//
-// }
-
-
 template <typename State, typename Action>
-void LearningDepthFirstSearch<State, Action>::push(StateID stateid, value_t bound, internal::DFSState* parent, internal::DFSState::Status status)
+bool LearningDepthFirstSearch<State, Action>::exploration_simple_recursive(
+    MDP& mdp,
+    HeuristicType& heuristic,
+    PruningType& pruning,
+    StateID state,
+    value_t bound,
+    downward::utils::CountdownTimer& timer)
 {
-    dfs_stack_.push_back({stateid, bound, parent, status});
+    StateInfo* sinfo;
+    sinfo = &this->state_infos_[state];
+    initialize(mdp, heuristic, pruning, state, *sinfo);
+    // SEARCH_SPACE_DRAWER->draw_search_space();
+
+    // std::println("Exploring state: {}, V: [{}, {}], bound: {}", state.id, sinfo->get_bounds().lower, sinfo->get_bounds().upper, bound);
+    if (sinfo->is_goal_or_terminal()) {
+        this->update_value(*sinfo, Interval(mdp.get_termination_cost(mdp.get_state(state))), this->epsilon);
+        SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), sinfo->get_bounds());
+        // std::println("State is terminal");
+        return sinfo->is_goal_state(); // State is already solved
+    } else if (sinfo->get_bounds().lower > bound) {
+        // std::println("State already cannot be solved within the bound");
+        return false; // State cannot be solved within the bound
+    } else if (sinfo->get_bounds().upper <= bound) {
+        // std::println("State is already solved within the bound");
+        return true; // State is already solved within the bound
+    }
+
+    auto full_state = mdp.get_state(state);
+    bool flag;
+    do {
+        SuccessorDistribution successors;
+        flag = false;
+        if (!sinfo->get_policy().has_value()) {
+            ++statistics_.backtracking_updates;
+            ClearGuard _(transitions_, qvalues_);
+            this->generate_non_tip_transitions(mdp, pruning, full_state, transitions_);
+            auto value = this->compute_bellman_and_greedy(full_state, transitions_, mdp, qvalues_);
+            auto transition = this->select_greedy_transition( mdp, sinfo->get_policy(), transitions_);
+            this->update_value(*sinfo, value, this->epsilon);
+            this->update_policy(*sinfo, transition);
+
+            // std::println("New greedy policy: V: [{}, {}], bound: {}", sinfo->get_bounds().lower, sinfo->get_bounds().upper, bound);
+            if (value.lower > bound) {
+                // If we are now above the bound, we cannot solve this state within the bound
+                break;
+            }
+            successors = std::move(transition->successor_dist);
+        } else {
+            auto action = sinfo->get_policy();
+            mdp.generate_action_transitions(full_state, *action, successors);
+        }
+        value_t action_cost = mdp.get_action_cost(sinfo->get_policy().value());
+        for (const auto& [succ_id, _] : successors.non_source_successor_dist) {
+            flag = exploration_simple_recursive(mdp, heuristic, pruning, succ_id, bound - action_cost, timer);
+            if (!flag) {
+                break; // Stop if any successor cannot be solved
+            }
+        }
+
+        if (!flag) {
+            // This state cannot be solved within the bound by the greedy policy
+            // Remove the greedy policy
+            this->update_policy(*sinfo, std::nullopt);
+        } else {
+            Interval new_value = sinfo->get_bounds();
+            set_min(new_value, Interval(bound));
+            this->update_value(*sinfo, new_value, this->epsilon);
+            SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), sinfo->get_bounds());
+        }
+    } while (!flag);
+
+    // std::println("State {}{} solved within bound {}, V: [{}, {}]", state.id, flag? "": " not", bound, sinfo->get_bounds().lower, sinfo->get_bounds().upper);
+    return flag;
+}
+
+
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// ++ Iterative (Non-Recursive) Implementation, generated by Google Gemini
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+template <typename State, typename Action>
+void LearningDepthFirstSearch<State, Action>::exploration_iterative(
+    MDP& mdp,
+    HeuristicType& heuristic,
+    PruningType& pruning,
+    StateID initial_state,
+    value_t initial_bound,
+    downward::utils::CountdownTimer& timer)
+{
+    using StackFrame = typename LearningDepthFirstSearch<State, Action>::StackFrame;
+    std::vector<StackFrame> call_stack;
+    call_stack.emplace_back(initial_state, initial_bound);
+    bool last_child_succeeded = false;
+
+    while (!call_stack.empty()) {
+        StackFrame& frame = call_stack.back();
+        StateInfo* sinfo = &this->state_infos_[frame.state_id];
+
+        // Part 1: Initialization (runs once per state visit)
+        if (!frame.is_initialized) {
+            frame.is_initialized = true;
+            initialize(mdp, heuristic, pruning, frame.state_id, *sinfo);
+            SEARCH_SPACE_DRAWER->draw_search_space();
+
+            if (sinfo->is_goal_or_terminal() || sinfo->get_bounds().lower > frame.bound || sinfo->get_bounds().upper <= frame.bound) {
+                if (sinfo->is_goal_or_terminal()) {
+                    this->update_value(*sinfo, Interval(mdp.get_termination_cost(mdp.get_state(frame.state_id))), this->epsilon);
+                    SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(frame.state_id), Interval(mdp.get_termination_cost(mdp.get_state(frame.state_id))));
+                }
+                frame.flag = true; // State is considered "solved"
+                goto cleanup_frame;
+            }
+
+            this->generate_non_tip_transitions(mdp, pruning, mdp.get_state(frame.state_id), frame.transition_tails);
+            frame.tail_it = frame.transition_tails.begin();
+        }
+
+        // Part 2: Resuming from a child call
+        if (frame.child_returned) {
+            frame.child_returned = false;
+            frame.flag &= last_child_succeeded;
+            frame.flag &= this->compute_qvalue(*frame.tail_it, mdp).lower <= frame.bound;
+
+            if (!frame.flag) { // This action is no longer viable, move to the next one
+                ++frame.tail_it;
+            } else { // Continue with the next successor of the current action
+                ++frame.succ_it;
+            }
+        }
+
+        // Part 3: Main loop over actions and successors
+        while (frame.tail_it != frame.transition_tails.end()) {
+            if (this->compute_qvalue(*frame.tail_it, mdp).lower > frame.bound) {
+                ++frame.tail_it;
+                continue; // This action cannot solve the state within the bound
+            }
+
+            frame.flag = true; // Optimistic assumption for this action
+            const auto& successors = frame.tail_it->successor_dist.non_source_successor_dist;
+
+            // If this is the first time we process this action's successors
+            if (frame.succ_it == decltype(frame.succ_it)()) {
+                frame.succ_it = successors.begin();
+            }
+
+            if (frame.succ_it != successors.end()) {
+                // Found a successor to visit, push it onto the stack ("recursive call")
+                const auto& [succ_id, _] = *frame.succ_it;
+                value_t new_bound = frame.bound - mdp.get_action_cost(frame.tail_it->action);
+
+                frame.child_returned = true; // Mark that we are descending
+                call_stack.emplace_back(succ_id, new_bound);
+                goto next_iteration; // Process the new frame on top of the stack
+            }
+
+            // If we get here, all successors for the current action were processed successfully
+            break; // Exit the action loop, as we found a working policy
+        }
+
+    cleanup_frame:
+        // Part 4: Finalize the frame (equivalent to the code after the loop in the recursive version)
+        if (frame.flag) { // State was solved within the bound
+            auto value = this->compute_qvalue(*frame.tail_it, mdp);
+            this->update_policy(*sinfo, *frame.tail_it);
+            if (upperbound_update_to_qvalue_) {
+                this->update_value(*sinfo, value, this->epsilon);
+            } else {
+                this->update_value(*sinfo, Interval(sinfo->get_bounds().lower, frame.bound), this->epsilon);
+            }
+        } else { // No action could solve the state within the bound
+            AlgorithmValueType value;
+            auto full_state = mdp.get_state(frame.state_id);
+            if (backtrack_update_upperbound_) {
+                ClearGuard _(qvalues_);
+                value = this->compute_bellman_and_greedy(full_state, frame.transition_tails, mdp, qvalues_);
+                qvalues_.clear();
+                auto result = this->update_value(*sinfo, value, this->epsilon);
+                if (result.converged) {
+                    auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), frame.transition_tails);
+                    this->update_policy(*sinfo, transition);
+                }
+            } else {
+                value = this->compute_bellman(full_state, frame.transition_tails, mdp);
+                this->update_value(*sinfo, Interval(value.lower, sinfo->get_bounds().upper), this->epsilon);
+            }
+            SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(frame.state_id), value);
+        }
+
+        ++statistics_.backtracking_updates;
+        last_child_succeeded = frame.flag; // Pass the result to the parent
+        call_stack.pop_back();
+
+    next_iteration:;
+    }
 }
 
 template <typename State, typename Action>
@@ -271,70 +383,6 @@ bool LearningDepthFirstSearch<State, Action>::initialize(
             transitions_);
     }
     return true;
-}
-
-template <typename State, typename Action>
-bool LearningDepthFirstSearch<State, Action>::value_iteration(
-    MDP& mdp,
-    PruningType& pruning,
-    const std::ranges::input_range auto& range,
-    downward::utils::CountdownTimer& timer)
-{
-    ++statistics_.convergence_value_iterations;
-
-    for (;;) {
-        auto [value_changed, policy_changed] =
-            vi_step(mdp, pruning, range, timer);
-
-        if (policy_changed) return false;
-        if (!value_changed) break;
-    }
-
-    return true;
-}
-
-template <typename State, typename Action>
-std::pair<bool, bool>
-LearningDepthFirstSearch<State, Action>::vi_step(
-    MDP& mdp,
-    PruningType& pruning,
-    const std::ranges::input_range auto& range,
-    downward::utils::CountdownTimer& timer)
-{
-    bool values_not_conv = false;
-    bool policy_not_conv = false;
-
-    for (const StateID id : range) {
-        timer.throw_if_expired();
-
-        StateInfo& state_info = this->state_infos_[id];
-
-        const auto state = mdp.get_state(id);
-
-        ClearGuard _(transitions_, qvalues_);
-
-        this->generate_non_tip_transitions(mdp, pruning, state, transitions_);
-
-        const auto value = this->compute_bellman_and_greedy(
-            state,
-            transitions_,
-            mdp,
-            qvalues_);
-
-        ++statistics_.convergence_updates;
-
-        auto transition = this->select_greedy_transition(
-            mdp,
-            state_info.get_policy(),
-            transitions_);
-
-        auto val_upd = this->update_value(state_info, value, this->epsilon);
-        bool policy_changed = this->update_policy(state_info, transition);
-        values_not_conv = values_not_conv || !val_upd.converged;
-        policy_not_conv = policy_not_conv || policy_changed;
-    }
-
-    return std::make_pair(values_not_conv, policy_not_conv);
 }
 
 } // namespace probfd::algorithms::learning_depth_first_search

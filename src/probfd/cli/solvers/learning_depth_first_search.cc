@@ -28,6 +28,7 @@ namespace {
 class LDFSSolver : public MDPHeuristicSearch<false, false> {
     const bool backtrack_update_upperbound_;
     const bool upperbound_update_to_qvalue_;
+    const bool simple_;
     const std::string name_;
 public:
     template <typename... Args>
@@ -35,11 +36,13 @@ public:
         std::string variant_name,
         bool backtrack_update_upperbound,
         bool upperbound_update_to_qvalue_,
+        bool simple,
         Args&&... args)
         : MDPHeuristicSearch<false, false>(std::forward<Args>(args)...)
         , name_(std::move(variant_name))
         , backtrack_update_upperbound_(backtrack_update_upperbound)
         , upperbound_update_to_qvalue_(upperbound_update_to_qvalue_)
+        , simple_(simple)
     {
     }
 
@@ -50,7 +53,7 @@ public:
         const std::shared_ptr<FDRCostFunction>& task_cost_function) override
     {
         return std::make_unique<AlgorithmAdaptor>(
-            std::make_unique<LearningDepthFirstSearch<downward::State, downward::OperatorID>>(this->convergence_epsilon_, this->tiebreaker_, backtrack_update_upperbound_, upperbound_update_to_qvalue_));
+            std::make_unique<LearningDepthFirstSearch<downward::State, downward::OperatorID>>(this->convergence_epsilon_, this->tiebreaker_, backtrack_update_upperbound_, upperbound_update_to_qvalue_, simple_));
     }
 };
 
@@ -69,6 +72,10 @@ public:
             "Whether to update the upper bound to the Q-value of the greedy policy.",
             "true");
 
+        this->add_option<bool>("simple",
+            "Whether to use the simplified version of the algorithm ",
+            "false");
+
         add_base_solver_options_except_algorithm_to_feature(*this);
         add_mdp_hs_options_to_feature<false, false>(*this);
     }
@@ -83,6 +90,7 @@ protected:
                 "ldfs",
                 options.get<bool>("backtrack_upperbound"),
                 options.get<bool>("upperbound_tightening"),
+                options.get<bool>("simple"),
                 get_mdp_hs_args_from_options<false, false>(options)),
             get_base_solver_args_no_algorithm_from_options(options));
     }

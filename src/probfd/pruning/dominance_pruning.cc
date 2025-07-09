@@ -26,7 +26,8 @@ namespace probfd::pruning {
         // Do dominance analysis
         std::shared_ptr state_dominance_relation = dominance_analysis->compute_dominance_relation(fts_task);
 
-        return std::make_unique<DominancePruning>(state_dominance_relation,
+        return std::make_unique<DominancePruning>(task_proxy,
+            state_dominance_relation,
             compare_initial_state,
             compare_source_state,
             compare_other_transitions,

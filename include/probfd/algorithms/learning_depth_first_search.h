@@ -79,9 +79,9 @@ private:
     // Algorithm parameters
     const bool backtrack_update_upperbound_;
     const bool upperbound_update_to_qvalue_;
+    const bool simple_;
 
     // Algorithm state
-    std::deque<internal::DFSState> dfs_stack_;
 
     // Re-used buffer
     std::vector<TransitionTail<Action>> transitions_;
@@ -91,7 +91,7 @@ private:
     Statistics statistics_;
 
 public:
-    explicit LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser, bool backtrack_update_upperbound, bool upperbound_update_to_qvalue);
+    explicit LearningDepthFirstSearch(value_t epsilon, std::shared_ptr<PolicyPicker> policy_chooser, bool backtrack_update_upperbound, bool upperbound_update_to_qvalue, bool simple);
 
 protected:
     Interval do_solve(
@@ -104,6 +104,23 @@ protected:
 
     void print_additional_statistics(std::ostream& out) const override;
 
+    struct StackFrame {
+        StateID state_id;
+        value_t bound;
+        std::vector<TransitionTail<Action>> transition_tails;
+        typename std::vector<TransitionTail<Action>>::iterator tail_it;
+        typename std::vector<ItemProbabilityPair<StateID, value_t>>::const_iterator succ_it;
+
+        bool flag{false};
+        bool is_initialized{false};
+        bool child_returned{false};
+
+        StackFrame(StateID state_id, value_t bound)
+            : state_id(state_id), bound(bound)
+        {
+        }
+    };
+
 private:
     bool exploration_recursive(
         MDP& mdp,
@@ -113,11 +130,22 @@ private:
         value_t bound,
         downward::utils::CountdownTimer& timer);
 
-    void push(
-        StateID stateid,
+    bool exploration_simple_recursive(
+        MDP& mdp,
+        HeuristicType& heuristic,
+        PruningType& pruning,
+        StateID state,
         value_t bound,
-        internal::DFSState* parent,
-        internal::DFSState::Status status);
+        downward::utils::CountdownTimer& timer);
+
+
+    void exploration_iterative(
+        MDP& mdp,
+        HeuristicType& heuristic,
+        PruningType& pruning,
+        StateID initial_state,
+        value_t initial_bound,
+        downward::utils::CountdownTimer& timer);
 
     bool initialize(
         MDP& mdp,
@@ -125,18 +153,6 @@ private:
         PruningType& pruning,
         StateID state_id,
         StateInfo& sinfo);
-
-    bool value_iteration(
-        MDP& mdp,
-        PruningType& pruning,
-        const std::ranges::input_range auto& range,
-        downward::utils::CountdownTimer& timer);
-
-    std::pair<bool, bool> vi_step(
-        MDP& mdp,
-        PruningType& pruning,
-        const std::ranges::input_range auto& range,
-        downward::utils::CountdownTimer& timer);
 };
 
 } // namespace probfd::algorithms::LearningDepthFirstSearch
