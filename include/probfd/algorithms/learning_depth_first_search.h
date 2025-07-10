@@ -64,6 +64,18 @@ public:
     using StateInfo = typename Base::StateInfo;
     using AlgorithmValueType = typename Base::AlgorithmValueType;
 
+    struct StackFrame {
+        StateID state_id;
+        value_t bound;
+        bool is_initialized{false};
+        Distribution<StateID>::const_iterator succ_it;
+
+        StackFrame(StateID state_id, value_t bound)
+            : state_id(state_id), bound(bound)
+        {
+        }
+    };
+
 private:
     using MDP = typename Base::MDPType;
     using HeuristicType = typename Base::HeuristicType;
@@ -82,6 +94,7 @@ private:
     const bool simple_;
 
     // Algorithm state
+    std::stack<StackFrame> dfs_stack_;
 
     // Re-used buffer
     std::vector<TransitionTail<Action>> transitions_;
@@ -104,23 +117,6 @@ protected:
 
     void print_additional_statistics(std::ostream& out) const override;
 
-    struct StackFrame {
-        StateID state_id;
-        value_t bound;
-        std::vector<TransitionTail<Action>> transition_tails;
-        typename std::vector<TransitionTail<Action>>::iterator tail_it;
-        typename std::vector<ItemProbabilityPair<StateID, value_t>>::const_iterator succ_it;
-
-        bool flag{false};
-        bool is_initialized{false};
-        bool child_returned{false};
-
-        StackFrame(StateID state_id, value_t bound)
-            : state_id(state_id), bound(bound)
-        {
-        }
-    };
-
 private:
     bool exploration_recursive(
         MDP& mdp,
@@ -130,21 +126,20 @@ private:
         value_t bound,
         downward::utils::CountdownTimer& timer);
 
+    bool exploration_simple_iterative(
+        MDP& mdp,
+        HeuristicType& heuristic,
+        PruningType& pruning,
+        StateID initial_state,
+        value_t initial_bound,
+        downward::utils::CountdownTimer& timer);
+
     bool exploration_simple_recursive(
         MDP& mdp,
         HeuristicType& heuristic,
         PruningType& pruning,
         StateID state,
         value_t bound,
-        downward::utils::CountdownTimer& timer);
-
-
-    void exploration_iterative(
-        MDP& mdp,
-        HeuristicType& heuristic,
-        PruningType& pruning,
-        StateID initial_state,
-        value_t initial_bound,
         downward::utils::CountdownTimer& timer);
 
     bool initialize(

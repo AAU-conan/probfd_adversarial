@@ -4,6 +4,7 @@
 
 #include "downward/utils/collections.h"
 #include "downward/utils/timer.h"
+#include "probfd/tasks/determinization_task.h"
 
 #include <cassert>
 #include <memory>
@@ -17,6 +18,7 @@ namespace downward::tasks {
 static const auto PRE_FILE_VERSION = "3";
 static const auto PRE_FILE_PROB_VERSION = "3P";
 shared_ptr<AbstractTask> g_root_task = nullptr;
+probfd::tasks::DeterminizationTask::OutcomeType g_root_task_outcome_type;
 
 struct ExplicitVariable {
     int domain_size;

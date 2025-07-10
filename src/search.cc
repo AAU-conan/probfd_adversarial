@@ -7,6 +7,8 @@
 #include "downward/cli/plugins/raw_registry.h"
 
 #include "probfd/tasks/root_task.h"
+#include "probfd/tasks/determinization_task.h"
+#include "downward/tasks/root_task.h"
 
 #include "probfd/utils/timed.h"
 
@@ -72,6 +74,29 @@ static int search(argparse::ArgumentParser& parser)
     const double max_time = parser.get<double>("--max-search-time");
 
     std::string search_arg = parser.get("algorithm");
+
+    std::string outcome_determinization = parser.get("--outcome-determinization");
+    if (outcome_determinization == "all") {
+        downward::tasks::g_root_task_outcome_type =
+            probfd::tasks::DeterminizationTask::OutcomeType::ALL_OUTCOMES;
+    } else if (outcome_determinization == "first") {
+        downward::tasks::g_root_task_outcome_type =
+            probfd::tasks::DeterminizationTask::OutcomeType::FIRST_OUTCOME;
+    } else if (outcome_determinization == "last") {
+        downward::tasks::g_root_task_outcome_type =
+            probfd::tasks::DeterminizationTask::OutcomeType::LAST_OUTCOME;
+    } else if (outcome_determinization == "random") {
+        downward::tasks::g_root_task_outcome_type =
+            probfd::tasks::DeterminizationTask::OutcomeType::RANDOM_SINGLE_OUTCOME;
+    } else {
+        std::println(
+            "Unknown outcome determinization type: {}. "
+            "Using 'last' as default.",
+            outcome_determinization);
+        downward::tasks::g_root_task_outcome_type =
+            probfd::tasks::DeterminizationTask::OutcomeType::LAST_OUTCOME;
+    }
+
 
     if (auto definitions_file = parser.present("--definitions-file")) {
         std::ifstream fs(*definitions_file);
@@ -271,6 +296,12 @@ void add_search_subcommand(argparse::ArgumentParser& arg_parser)
         .help("The translated PPDDL planning problem file.")
         .required()
         .filepath();
+
+    search_parser.add_argument("--outcome-determinization")
+        .help("The type of outcome determinization to use for the "
+              "determinization task. ")
+        .default_value(std::string{"last"})
+        .choices("all", "first", "last", "random");
 }
 
 } // namespace probfd
