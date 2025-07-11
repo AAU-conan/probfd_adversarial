@@ -416,6 +416,10 @@ class ProbabilisticEffect(object):
 
         return cost_effect, ProbabilisticEffect(remaining_pairs)
 
+    def normalize_oneof(self):
+        # Turn  this into a OneOfEffect
+        return OneOfEffect([e for p, e in self.effect_probability_pairs]).normalize_oneof()
+
 
 class OneOfEffect(object):
     def __init__(self, effects: List[AnyEffect]):
