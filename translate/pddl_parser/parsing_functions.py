@@ -422,7 +422,7 @@ def add_effects(tmp_effect, result):
 def parse_probability(context, text):
     probability = Fraction(text)
 
-    if probability <= 0 or probability > 1:
+    if probability < 0 or probability > 1:
         context.error("Expected probability between zero and one", probability)
 
     return probability
@@ -523,6 +523,8 @@ def parse_effect(context, alist, type_dict, predicate_dict, has_reward_fluent):
             effect = parse_effect(context, pair[1], type_dict,
                                   predicate_dict, has_reward_fluent)
             remaining_probability -= probability
+            if probability == 0:
+                continue
             outcomes.append((probability, effect))
 
         if remaining_probability < 0:
@@ -980,6 +982,9 @@ def parse_task_pddl(
         for entry in iterator:
             if isinstance(entry, list) and entry[0] == ":metric":
                 with context.layer("Parsing metric"):
+                    if isinstance(entry[1], list):
+                        # Unpack
+                        entry = [entry[0], entry[1][0], entry[1][1]]
                     if (len(entry) != 3 or
                             not isinstance(entry[2], list) or
                             len(entry[2]) != 1 or

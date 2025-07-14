@@ -28,7 +28,7 @@ public:
         add_option<bool>(
             "_init",
             "Prune transitions where the initial state dominates a target state.",
-            "true");
+            "false");
         add_option<bool>(
             "source",
             "Prune transitions where the source state dominates a target state.",
@@ -36,7 +36,7 @@ public:
         add_option<bool>(
             "other",
             "Prune transitions where all target states of another transition dominate a target state.",
-            "true");
+            "false");
         add_option<bool>(
             "outcomes",
             "Prune target state that dominate another target state.",
