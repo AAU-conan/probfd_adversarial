@@ -66,6 +66,8 @@ struct Statistics {
     unsigned long long value_updates = 0;
     unsigned long long policy_updates = 0;
 
+    unsigned long long solution_policy_size = 0;
+
     value_t initial_state_estimate = 0;
     bool initial_state_found_terminal = false;
 

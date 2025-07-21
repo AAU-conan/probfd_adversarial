@@ -41,6 +41,7 @@ inline void Statistics::print(std::ostream& out) const
     out << "  Number of value changes: " << value_changes << std::endl;
     out << "  Number of policy updates: " << policy_updates << std::endl;
     out << "  Number of policy changes: " << policy_changes << std::endl;
+    out << "  Solution policy size: " << solution_policy_size << std::endl;
 
 #if defined(EXPENSIVE_STATISTICS)
     out << "  Updating time: " << update_time << std::endl;
@@ -432,6 +433,7 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
 
     do {
         const StateID state_id = queue.front();
+        ++HSBase::statistics_.solution_policy_size;
         queue.pop_front();
 
         std::optional<Action> action;
