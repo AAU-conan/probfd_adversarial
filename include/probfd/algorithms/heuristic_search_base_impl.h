@@ -358,7 +358,7 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::filter_greedy_transitions(
     auto [it, end] = std::ranges::remove_if(
         view,
         [&](const AlgorithmValueType& value) {
-            return as_lower_bound(best_value) != as_lower_bound(value);
+            return value > best_value;
         },
         project<1>);
 
@@ -489,7 +489,7 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
 
 #ifndef NDEBUG
     if (this->search_space_drawer) {
-        // this->search_space_drawer->draw_search_space(&*policy);
+        this->search_space_drawer->draw_search_space(&*policy);
     }
 #endif
     return policy;
