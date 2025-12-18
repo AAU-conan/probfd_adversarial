@@ -97,7 +97,7 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
 
     // std::println("Exploring state: {}, V: [{}, {}], bound: {}", state_name(mdp.get_state(state)), sinfo->get_bounds().lower, sinfo->get_bounds().upper, bound);
 
-    if (sinfo->is_goal_or_terminal() || sinfo->get_bounds().lower > bound || sinfo->get_bounds().upper <= bound) {
+    if (sinfo->is_goal_or_terminal() || sinfo->get_bounds().upper <= bound) {
         if (sinfo->is_goal_or_terminal()) {
             this->update_value(*sinfo, Interval(mdp.get_termination_cost(mdp.get_state(state))), this->epsilon);
             SEARCH_SPACE_DRAWER->set_q_value(mdp.get_state(state), Interval(mdp.get_termination_cost(mdp.get_state(state))));
@@ -132,24 +132,35 @@ bool LearningDepthFirstSearch<State, Action>::exploration_recursive(
     if (flag) {
         // std::println("State {} solved within bound {}", state_name(full_state), bound);
         auto value = this->compute_qvalue(*tail_it, mdp);
-        this->update_policy(*sinfo, *tail_it);
-        if (upperbound_update_to_qvalue_) {
-            this->update_value(*sinfo, value, this->epsilon);
-        } else {
+        auto result = upperbound_update_to_qvalue_?
+            this->update_value(*sinfo, value, this->epsilon):
             this->update_value(*sinfo, Interval(sinfo->get_bounds().lower, bound), this->epsilon);
+        if (result.changed) {
+            ClearGuard _(qvalues_);
+            value = this->compute_bellman_and_greedy(full_state, transition_tails, mdp, qvalues_, true);
+            qvalues_.clear();
+            auto result = this->update_value(*sinfo, value, this->epsilon);
+            auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transition_tails);
+            // std::cout << "Updating " << state << " to " << value << " based on transition to ";
+            // for (const auto& [succ_id, _] : transition.value().successor_dist.non_source_successor_dist) {
+            //     std::cout << succ_id << " ";
+            // }
+            this->update_policy(*sinfo, *tail_it);
         }
     } else {
         AlgorithmValueType value;
         if (backtrack_update_upperbound_) {
             ClearGuard _(qvalues_);
-            value = this->compute_bellman_and_greedy(full_state, transition_tails, mdp, qvalues_);
+            value = this->compute_bellman_and_greedy(full_state, transition_tails, mdp, qvalues_, true);
             qvalues_.clear();
             auto result = this->update_value(*sinfo, value, this->epsilon);
-            if (result.converged) {
-                // We found the true value, but outside the bound, update the policy
-                auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transition_tails);
-                this->update_policy(*sinfo, transition);
-            }
+            auto transition = this->select_greedy_transition(mdp, sinfo->get_policy(), transition_tails);
+            // std::cout << "Updating " << state << " to " << value << " based on transition to ";
+            // for (const auto& [succ_id, _] : transition.value().successor_dist.non_source_successor_dist) {
+            //     std::cout << succ_id << " ";
+            // }
+            // std::cout << std::endl;
+            this->update_policy(*sinfo, transition);
         } else {
             value = this->compute_bellman(full_state, transition_tails, mdp);
             this->update_value(*sinfo, Interval(value.lower, sinfo->get_bounds().upper), this->epsilon);

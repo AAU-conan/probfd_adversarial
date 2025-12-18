@@ -97,7 +97,8 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_bellman_and_greedy(
     ParamType<State> source_state,
     std::vector<TransitionTailType>& transition_tails,
     CostFunctionType& cost_function,
-    std::vector<AlgorithmValueType>& qvalues) const -> AlgorithmValueType
+    std::vector<AlgorithmValueType>& qvalues,
+    bool preserve_upper_bound) const -> AlgorithmValueType
 {
 #if defined(EXPENSIVE_STATISTICS)
     TimerScope scoped_upd_timer(statistics_.update_time);
@@ -123,7 +124,7 @@ auto HeuristicSearchBase<State, Action, StateInfoT>::compute_bellman_and_greedy(
         return AlgorithmValueType(termination_cost);
     }
 
-    filter_greedy_transitions(transition_tails, qvalues, best_value);
+    filter_greedy_transitions(transition_tails, qvalues, best_value, as_upper_bound(best_value) < INFINITE_VALUE && preserve_upper_bound);
 
 #ifndef NDEBUG
     if (this->search_space_drawer) this->search_space_drawer->set_q_value(source_state, best_value);
@@ -352,13 +353,14 @@ template <typename State, typename Action, typename StateInfoT>
 auto HeuristicSearchBase<State, Action, StateInfoT>::filter_greedy_transitions(
     std::vector<TransitionTailType>& transition_tails,
     std::vector<AlgorithmValueType>& qvalues,
-    const AlgorithmValueType& best_value) const -> AlgorithmValueType
+    const AlgorithmValueType& best_value,
+    bool preserve_upper_bound) const -> AlgorithmValueType
 {
     auto view = std::views::zip(transition_tails, qvalues);
     auto [it, end] = std::ranges::remove_if(
         view,
         [&](const AlgorithmValueType& value) {
-            return value > best_value;
+            return (preserve_upper_bound && as_upper_bound(value) > as_upper_bound(best_value)) || (!preserve_upper_bound && value > best_value);
         },
         project<1>);
 
@@ -455,7 +457,8 @@ auto HeuristicSearchAlgorithm<State, Action, StateInfoT>::compute_policy(
                 state,
                 transition_tails,
                 mdp,
-                qvalues);
+                qvalues,
+                true);
 
             action = this->select_greedy_transition(
                              mdp,

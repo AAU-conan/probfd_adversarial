@@ -201,12 +201,18 @@ public:
      * the greedy transition tails returned in @p transition_tails .
      * Note that all Q-value lower bounds will match the minimal Q-value lower
      * bound.
+     *
+     * @param preserve_upper_bound If true, ensure that the greedy transitions
+     * maintain the upper bound. I.e., if we have transitions with Q-values
+     * [5, inf), [5, 8], [7,7], we should only keep [7,7] because the two others
+     * cannot guarantee as good of an upper bound.
      */
     AlgorithmValueType compute_bellman_and_greedy(
         ParamType<State> source_state,
         std::vector<TransitionTailType>& transition_tails,
         CostFunctionType& cost_function,
-        std::vector<AlgorithmValueType>& qvalues) const;
+        std::vector<AlgorithmValueType>& qvalues,
+        bool preserve_upper_bound = true) const;
 
     /**
      * @brief Selects a greedy transition from the given list of greedy
@@ -290,7 +296,8 @@ private:
     AlgorithmValueType filter_greedy_transitions(
         std::vector<TransitionTailType>& transition_tails,
         std::vector<AlgorithmValueType>& qvalues,
-        const AlgorithmValueType& best_value) const;
+        const AlgorithmValueType& best_value,
+        bool preserve_upper_bound) const;
 
     void reset_search_state()
         requires Resettable<StateInfo>;

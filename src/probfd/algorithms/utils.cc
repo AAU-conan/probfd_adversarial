@@ -11,7 +11,17 @@ value_t as_lower_bound(Interval interval)
     return interval.lower;
 }
 
+value_t as_upper_bound(Interval interval)
+{
+    return interval.upper;
+}
+
 value_t as_lower_bound(value_t single)
+{
+    return single;
+}
+
+value_t as_upper_bound(value_t single)
 {
     return single;
 }

@@ -58,9 +58,11 @@ inline constexpr get_t<n> project;
 
 /// Returns the lower bound of the interval.
 value_t as_lower_bound(Interval interval);
+value_t as_upper_bound(Interval interval);
 
 /// Returns the value unchanged.
 value_t as_lower_bound(value_t single);
+value_t as_upper_bound(value_t single);
 
 /// Returns the interval with the given lower bound and infinte upper bound.
 Interval as_interval(value_t lower_bound);
