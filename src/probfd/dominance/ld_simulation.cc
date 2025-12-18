@@ -85,6 +85,9 @@ namespace probfd::dominance {
                 // a) for all s-(l,o)-> s'. s' <= t and l dominated by noop?
                 // b) exist t-l'->. for all t-l'-o'-> t'. exists s-l-o-> s'. t' >= s' and (l,o) dominated by (l',o')?
                 return lts.applyPostSrc(s, [&](const LTSTransition &trs) {
+                    if (!lts.is_relevant_label_group(trs.label_group)) {
+                        return false; // Irrelevant labels are trivially simulated
+                    }
                     // Checking all transitions of s, if this returns true, we remove the simulation!
 
                     // std::println("  Checking s-transition {}-({})->{}", lts.state_name(s), lts.label_group_name(trs.label_group), lts.state_names(trs.targets));
